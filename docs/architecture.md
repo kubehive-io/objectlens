@@ -94,3 +94,21 @@ flowchart TD
   Ceph --> Allowed[Only buckets allowed by credentials]
   Allowed --> UI
 ```
+
+## Bucket Browsing And Pagination
+
+ObjectLens does not load an entire bucket into the UI. Bucket content is shown in pages, and the default page size is 50 objects. The bucket browser treats prefixes as folder-like navigation, similar to the AWS S3 console. Nested objects only appear when the user enters the prefix.
+
+In browse mode, `GET /buckets/{bucket}/objects` returns common prefixes and direct objects for the current prefix. In search mode, matching objects are returned directly and still paginated.
+
+```mermaid
+flowchart TD
+  User[User opens bucket] --> UI[Bucket Page]
+  UI --> API[GET /buckets/{bucket}/objects?prefix=&delimiter=/&limit=50]
+  API --> DB[(Metadata Index)]
+  DB --> Prefixes[Common Prefixes / Folders]
+  DB --> Objects[Direct Objects Only]
+  Prefixes --> UI
+  Objects --> UI
+  UI --> User
+```

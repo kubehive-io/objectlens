@@ -16,6 +16,7 @@ from sqlalchemy import (
     desc,
     func,
     inspect,
+    literal,
     select,
 )
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -158,6 +159,92 @@ def search_objects(
     with get_engine().connect() as conn:
         rows = conn.execute(statement).mappings().all()
     return [dict(row) for row in rows]
+
+
+def count_objects(
+    provider: str,
+    bucket: str,
+    prefix: str | None = None,
+    search: str | None = None,
+    direct_only: bool = False,
+    delimiter: str = "/",
+) -> int:
+    clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
+    normalized_prefix = prefix or ""
+    if normalized_prefix:
+        clauses.append(object_metadata.c.key.like(f"{normalized_prefix}%"))
+    if search:
+        clauses.append(object_metadata.c.key.like(f"%{search}%"))
+    if direct_only:
+        suffix = func.substr(object_metadata.c.key, len(normalized_prefix) + 1)
+        clauses.append(func.instr(suffix, delimiter) == 0)
+
+    statement = select(func.count()).where(and_(*clauses))
+    with get_engine().connect() as conn:
+        return int(conn.execute(statement).scalar_one())
+
+
+def direct_child_objects(
+    provider: str,
+    bucket: str,
+    prefix: str = "",
+    delimiter: str = "/",
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict[str, Any]]:
+    clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
+    if prefix:
+        clauses.append(object_metadata.c.key.like(f"{prefix}%"))
+    suffix = func.substr(object_metadata.c.key, len(prefix) + 1)
+    clauses.append(func.instr(suffix, delimiter) == 0)
+
+    statement = (
+        select(object_metadata)
+        .where(and_(*clauses))
+        .order_by(object_metadata.c.key.asc())
+        .limit(limit)
+        .offset(offset)
+    )
+    with get_engine().connect() as conn:
+        rows = conn.execute(statement).mappings().all()
+    return [dict(row) for row in rows]
+
+
+def common_prefixes(
+    provider: str,
+    bucket: str,
+    prefix: str = "",
+    delimiter: str = "/",
+) -> list[dict[str, Any]]:
+    clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
+    if prefix:
+        clauses.append(object_metadata.c.key.like(f"{prefix}%"))
+
+    suffix = func.substr(object_metadata.c.key, len(prefix) + 1)
+    delimiter_position = func.instr(suffix, delimiter)
+    common_prefix = literal(prefix) + func.substr(suffix, 1, delimiter_position)
+    statement = (
+        select(
+            common_prefix.label("prefix"),
+            func.count().label("object_count"),
+        )
+        .where(and_(*clauses))
+        .where(delimiter_position > 0)
+        .group_by(common_prefix)
+        .order_by(common_prefix.asc())
+    )
+
+    with get_engine().connect() as conn:
+        rows = conn.execute(statement).mappings().all()
+
+    return [
+        {
+            "name": row["prefix"][len(prefix) :],
+            "prefix": row["prefix"],
+            "object_count": row["object_count"],
+        }
+        for row in rows
+    ]
 
 
 def bucket_index_stats(provider: str, bucket: str) -> dict[str, Any]:

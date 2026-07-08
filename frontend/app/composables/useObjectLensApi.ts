@@ -44,13 +44,42 @@ export type PrefixSummary = {
 };
 
 export type BucketSummary = {
+  provider: string;
   bucket: string;
-  object_count: number;
-  total_size: number;
+  indexed_object_count: number;
+  indexed_total_size: number;
   last_indexed_at?: string | null;
   largest_objects: ObjectMetadata[];
   recent_objects: ObjectMetadata[];
   top_prefixes: PrefixSummary[];
+};
+
+export type BucketPrefix = {
+  name: string;
+  prefix: string;
+  object_count: number;
+};
+
+export type Pagination = {
+  limit: number;
+  offset: number;
+  next_offset?: number | null;
+  previous_offset?: number | null;
+  has_next: boolean;
+  has_previous: boolean;
+};
+
+export type BucketObjectListing = {
+  bucket: string;
+  prefix: string;
+  delimiter?: string | null;
+  mode: "browse" | "search";
+  limit: number;
+  offset: number;
+  total_objects: number;
+  objects: ObjectMetadata[];
+  prefixes: BucketPrefix[];
+  pagination: Pagination;
 };
 
 export type ObjectPreview = {
@@ -102,8 +131,11 @@ export function useObjectLensApi() {
     bucketSummary: (bucket: string) => request<BucketSummary>(`/buckets/${encodeURIComponent(bucket)}/summary`),
     listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),
-    listBucketObjects: (bucket: string, params: { prefix?: string; search?: string; limit?: number; offset?: number }) =>
-      request<{ objects: ObjectMetadata[]; count: number }>(`/buckets/${encodeURIComponent(bucket)}/objects`, {
+    listBucketObjects: (
+      bucket: string,
+      params: { prefix?: string; search?: string; limit?: number; offset?: number; delimiter?: string },
+    ) =>
+      request<BucketObjectListing>(`/buckets/${encodeURIComponent(bucket)}/objects`, {
         query: params,
       }),
     scanBucket: (bucket: string) =>

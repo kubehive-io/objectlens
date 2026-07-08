@@ -9,6 +9,9 @@ ObjectLens is documented with MkDocs Material.
 - Ceph RGW provider
 - Visible bucket listing based on provider credentials
 - Bucket detail pages
+- Bucket details and indexed statistics
+- Paginated bucket browsing
+- AWS S3-style prefix/folder navigation
 - Indexed search
 - JSON, CSV, Parquet, and image preview
 - Presigned downloads

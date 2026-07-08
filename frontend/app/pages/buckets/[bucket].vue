@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import type { BucketDetails, BucketSummary, ObjectMetadata, ProviderInfo } from "../../composables/useObjectLensApi";
+import type {
+  BucketDetails,
+  BucketObjectListing,
+  BucketSummary,
+  ObjectMetadata,
+  ProviderInfo,
+} from "../../composables/useObjectLensApi";
 import { useObjectLensApi } from "../../composables/useObjectLensApi";
 
 const route = useRoute();
@@ -9,14 +15,42 @@ const bucket = computed(() => String(route.params.bucket || ""));
 const provider = ref<ProviderInfo | null>(null);
 const details = ref<BucketDetails | null>(null);
 const summary = ref<BucketSummary | null>(null);
-const objects = ref<ObjectMetadata[]>([]);
-const prefix = ref("");
+const listing = ref<BucketObjectListing | null>(null);
+const currentPrefix = ref("");
 const search = ref("");
+const pageSize = ref(50);
+const offset = ref(0);
 const loading = ref(true);
 const loadingObjects = ref(false);
 const scanning = ref(false);
 const error = ref("");
 const notice = ref("");
+
+const objects = computed(() => listing.value?.objects || []);
+const prefixes = computed(() => listing.value?.prefixes || []);
+const isSearchMode = computed(() => Boolean(search.value.trim()));
+const objectRange = computed(() => {
+  const total = listing.value?.total_objects || 0;
+  if (!total) return "0 objects";
+  const start = (listing.value?.offset || 0) + 1;
+  const end = (listing.value?.offset || 0) + objects.value.length;
+  return `${start}-${end} of ${total}`;
+});
+const breadcrumbs = computed(() => {
+  const parts = currentPrefix.value.split("/").filter(Boolean);
+  const items = [{ label: "root", prefix: "" }];
+  let path = "";
+  for (const part of parts) {
+    path += `${part}/`;
+    items.push({ label: part, prefix: path });
+  }
+  return items;
+});
+
+function displayName(key: string) {
+  if (!currentPrefix.value || isSearchMode.value) return key;
+  return key.slice(currentPrefix.value.length) || key;
+}
 
 function formatBytes(value?: number | null) {
   if (!value) return "0 B";
@@ -36,12 +70,13 @@ async function loadObjects() {
   loadingObjects.value = true;
   error.value = "";
   try {
-    const response = await api.listBucketObjects(bucket.value, {
-      prefix: prefix.value.trim() || undefined,
+    listing.value = await api.listBucketObjects(bucket.value, {
+      prefix: currentPrefix.value,
       search: search.value.trim() || undefined,
-      limit: 200,
+      limit: pageSize.value,
+      offset: offset.value,
+      delimiter: "/",
     });
-    objects.value = response.objects;
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Failed to load indexed objects.";
   } finally {
@@ -62,6 +97,24 @@ async function refreshBucket() {
   } finally {
     loading.value = false;
   }
+}
+
+function enterPrefix(prefix: string) {
+  currentPrefix.value = prefix;
+  offset.value = 0;
+  void loadObjects();
+}
+
+function nextPage() {
+  if (listing.value?.pagination.next_offset === null || listing.value?.pagination.next_offset === undefined) return;
+  offset.value = listing.value.pagination.next_offset;
+  void loadObjects();
+}
+
+function previousPage() {
+  if (listing.value?.pagination.previous_offset === null || listing.value?.pagination.previous_offset === undefined) return;
+  offset.value = listing.value.pagination.previous_offset;
+  void loadObjects();
 }
 
 async function scanBucket() {
@@ -88,7 +141,13 @@ async function downloadObject(object: ObjectMetadata) {
   }
 }
 
-watch([prefix, search], () => {
+watch(search, () => {
+  offset.value = 0;
+  void loadObjects();
+});
+
+watch(pageSize, () => {
+  offset.value = 0;
   void loadObjects();
 });
 
@@ -103,7 +162,7 @@ onMounted(() => {
       <div>
         <NuxtLink class="back-link" to="/">Visible buckets</NuxtLink>
         <h1>{{ bucket }}</h1>
-        <p>Scan bucket to build local search index.</p>
+        <p>Scan bucket to build local search index before browsing large buckets.</p>
       </div>
       <button class="primary" :disabled="scanning" @click="scanBucket">
         <span :class="{ spin: scanning }">↻</span>
@@ -113,41 +172,97 @@ onMounted(() => {
 
     <div v-if="error" class="alert error">{{ error }}</div>
     <div v-if="notice" class="alert success">{{ notice }}</div>
+    <div v-if="!loading && (details?.indexed_object_count ?? 0) === 0" class="alert warning">
+      Scan this bucket to build a local index before browsing.
+    </div>
 
     <section class="status-grid">
       <article class="status-card">
         <span class="label">Provider</span>
-        <strong>{{ provider?.display_name || details?.provider || "Ceph RGW" }}</strong>
+        <strong>{{ provider?.display_name || summary?.provider || details?.provider || "Ceph RGW" }}</strong>
         <p>{{ provider?.endpoint_url || "Endpoint not configured" }}</p>
       </article>
       <article class="status-card">
         <span class="label">Indexed objects</span>
-        <strong>{{ details?.indexed_object_count ?? 0 }}</strong>
-        <p>{{ formatBytes(details?.indexed_total_size) }} indexed</p>
+        <strong>{{ details?.indexed_object_count ?? summary?.indexed_object_count ?? 0 }}</strong>
+        <p>{{ formatBytes(details?.indexed_total_size ?? summary?.indexed_total_size) }} indexed</p>
       </article>
       <article class="status-card">
         <span class="label">Last indexed</span>
-        <strong>{{ formatDate(details?.last_indexed_at) }}</strong>
-        <p>Preview reads only a limited amount of the object.</p>
+        <strong>{{ formatDate(details?.last_indexed_at ?? summary?.last_indexed_at) }}</strong>
+        <p>Default page size is 50 objects.</p>
       </article>
     </section>
 
+    <nav class="breadcrumb" aria-label="Prefix breadcrumb">
+      <button
+        v-for="item in breadcrumbs"
+        :key="item.prefix"
+        class="breadcrumb-button"
+        @click="enterPrefix(item.prefix)"
+      >
+        {{ item.label }}
+      </button>
+    </nav>
+
     <section class="toolbar">
-      <label>
-        Prefix
-        <input v-model="prefix" placeholder="logs/2026/" />
-      </label>
       <label>
         Search inside bucket
         <input v-model="search" placeholder="snapshot, metrics, .json" />
       </label>
+      <label>
+        Page size
+        <select v-model.number="pageSize">
+          <option :value="25">25</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+      </label>
+    </section>
+
+    <section v-if="!isSearchMode" class="section-block">
+      <div class="section-heading">
+        <div>
+          <h2>Folders</h2>
+          <p>AWS S3-style prefixes. Nested objects appear after you enter a folder.</p>
+        </div>
+      </div>
+      <div v-if="loadingObjects" class="empty-panel">Loading folders...</div>
+      <div v-else-if="prefixes.length === 0" class="empty-panel">No folders under this prefix.</div>
+      <div v-else class="prefix-grid">
+        <button
+          v-for="item in prefixes"
+          :key="item.prefix"
+          class="prefix-card"
+          @click="enterPrefix(item.prefix)"
+        >
+          <span class="folder-icon">▣</span>
+          <strong>{{ item.name }}</strong>
+          <small>{{ item.object_count }} objects</small>
+        </button>
+      </div>
     </section>
 
     <section class="table-wrap">
+      <div class="table-header">
+        <div>
+          <span class="label">{{ listing?.mode || "browse" }} mode</span>
+          <p>{{ isSearchMode ? "Search results are paginated." : "Showing direct objects only for the current prefix." }}</p>
+        </div>
+        <div class="pagination-controls">
+          <span>{{ objectRange }}</span>
+          <button :disabled="!listing?.pagination.has_previous || loadingObjects" @click="previousPage">
+            Previous
+          </button>
+          <button :disabled="!listing?.pagination.has_next || loadingObjects" @click="nextPage">
+            Next
+          </button>
+        </div>
+      </div>
       <table>
         <thead>
           <tr>
-            <th>Key</th>
+            <th>Key/name</th>
             <th>Size</th>
             <th>Last modified</th>
             <th>Content type</th>
@@ -161,7 +276,7 @@ onMounted(() => {
           </tr>
           <template v-else>
             <tr v-for="object in objects" :key="`${object.provider}/${object.bucket}/${object.key}`">
-              <td class="key-cell">{{ object.key }}</td>
+              <td class="key-cell">{{ displayName(object.key) }}</td>
               <td>{{ formatBytes(object.size) }}</td>
               <td>{{ formatDate(object.last_modified) }}</td>
               <td>{{ object.content_type || "-" }}</td>
@@ -180,7 +295,7 @@ onMounted(() => {
           </template>
           <tr v-if="!loading && !loadingObjects && objects.length === 0">
             <td colspan="6" class="empty">
-              No objects indexed yet. Scan bucket to build local search index.
+              No direct objects found for this prefix and page.
             </td>
           </tr>
         </tbody>

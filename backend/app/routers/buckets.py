@@ -2,14 +2,25 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Query
 
 from ..config import get_settings
-from ..db import bucket_index_stats, largest_objects, recent_objects, search_objects, top_prefixes
+from ..db import (
+    bucket_index_stats,
+    common_prefixes,
+    count_objects,
+    direct_child_objects,
+    largest_objects,
+    recent_objects,
+    search_objects,
+    top_prefixes,
+)
 from ..models import (
     Bucket,
     BucketDetailsResponse,
     BucketListResponse,
+    BucketObjectListing,
+    BucketPrefix,
     BucketSummaryResponse,
-    ObjectListResponse,
     ObjectMetadata,
+    Pagination,
     PrefixSummary,
 )
 from ..providers import get_provider
@@ -52,25 +63,85 @@ def list_buckets() -> BucketListResponse:
     )
 
 
-@router.get("/buckets/{bucket}/objects", response_model=ObjectListResponse)
+@router.get("/buckets/{bucket}/objects", response_model=BucketObjectListing)
 def bucket_objects(
     bucket: str,
-    prefix: str | None = Query(default=None),
+    prefix: str = Query(default=""),
     search: str | None = Query(default=None),
-    limit: int = Query(default=100, ge=1, le=1000),
+    limit: int = Query(default=50, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
-) -> ObjectListResponse:
+    delimiter: str | None = Query(default="/"),
+) -> BucketObjectListing:
     provider = _provider_or_error()
-    rows = search_objects(
-        provider=provider.provider,
+    normalized_prefix = prefix or ""
+
+    if search:
+        rows = search_objects(
+            provider=provider.provider,
+            bucket=bucket,
+            prefix=normalized_prefix,
+            search=search,
+            limit=limit,
+            offset=offset,
+        )
+        prefixes = []
+        total_objects = count_objects(
+            provider=provider.provider,
+            bucket=bucket,
+            prefix=normalized_prefix,
+            search=search,
+        )
+        mode = "search"
+    else:
+        rows = direct_child_objects(
+            provider=provider.provider,
+            bucket=bucket,
+            prefix=normalized_prefix,
+            delimiter=delimiter or "/",
+            limit=limit,
+            offset=offset,
+        )
+        prefixes = [
+            BucketPrefix.model_validate(row)
+            for row in common_prefixes(
+                provider=provider.provider,
+                bucket=bucket,
+                prefix=normalized_prefix,
+                delimiter=delimiter or "/",
+            )
+        ]
+        total_objects = count_objects(
+            provider=provider.provider,
+            bucket=bucket,
+            prefix=normalized_prefix,
+            direct_only=True,
+            delimiter=delimiter or "/",
+        )
+        mode = "browse"
+
+    objects = [ObjectMetadata.model_validate(row) for row in rows]
+    has_previous = offset > 0
+    next_offset = offset + limit if offset + len(objects) < total_objects else None
+    previous_offset = max(offset - limit, 0) if has_previous else None
+    return BucketObjectListing(
         bucket=bucket,
-        prefix=prefix,
-        search=search,
+        prefix=normalized_prefix,
+        delimiter=delimiter,
+        mode=mode,
         limit=limit,
         offset=offset,
+        total_objects=total_objects,
+        objects=objects,
+        prefixes=prefixes,
+        pagination=Pagination(
+            limit=limit,
+            offset=offset,
+            next_offset=next_offset,
+            previous_offset=previous_offset,
+            has_next=next_offset is not None,
+            has_previous=has_previous,
+        ),
     )
-    objects = [ObjectMetadata.model_validate(row) for row in rows]
-    return ObjectListResponse(objects=objects, count=len(objects))
 
 
 @router.get("/buckets/{bucket}/summary", response_model=BucketSummaryResponse)
@@ -78,9 +149,10 @@ def bucket_summary(bucket: str) -> BucketSummaryResponse:
     provider = _provider_or_error()
     stats = bucket_index_stats(provider.provider, bucket)
     return BucketSummaryResponse(
+        provider=provider.provider,
         bucket=bucket,
-        object_count=stats["object_count"],
-        total_size=stats["total_size"],
+        indexed_object_count=stats["object_count"],
+        indexed_total_size=stats["total_size"],
         last_indexed_at=stats["last_indexed_at"],
         largest_objects=[
             ObjectMetadata.model_validate(row) for row in largest_objects(provider.provider, bucket)

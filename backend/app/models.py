@@ -45,6 +45,34 @@ class ObjectListResponse(BaseModel):
     count: int
 
 
+class Pagination(BaseModel):
+    limit: int
+    offset: int
+    next_offset: int | None = None
+    previous_offset: int | None = None
+    has_next: bool
+    has_previous: bool
+
+
+class BucketPrefix(BaseModel):
+    name: str
+    prefix: str
+    object_count: int
+
+
+class BucketObjectListing(BaseModel):
+    bucket: str
+    prefix: str
+    delimiter: str | None = None
+    mode: str
+    limit: int
+    offset: int
+    total_objects: int
+    objects: list[ObjectMetadata]
+    prefixes: list[BucketPrefix]
+    pagination: Pagination
+
+
 class PrefixSummary(BaseModel):
     prefix: str
     object_count: int
@@ -52,9 +80,10 @@ class PrefixSummary(BaseModel):
 
 
 class BucketSummaryResponse(BaseModel):
+    provider: str
     bucket: str
-    object_count: int
-    total_size: int
+    indexed_object_count: int
+    indexed_total_size: int
     last_indexed_at: datetime | None = None
     largest_objects: list[ObjectMetadata]
     recent_objects: list[ObjectMetadata]

@@ -99,6 +99,51 @@ p {
   font-size: 22px;
 }
 
+.prefix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.prefix-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "icon name"
+    "icon meta";
+  justify-content: start;
+  height: auto;
+  min-height: 72px;
+  border: 1px solid #dce3ef;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  padding: 12px;
+  text-align: left;
+}
+
+.prefix-card:hover {
+  border-color: #176b87;
+}
+
+.folder-icon {
+  grid-area: icon;
+  align-self: center;
+  margin-right: 10px;
+  color: #176b87;
+  font-size: 22px;
+}
+
+.prefix-card strong {
+  grid-area: name;
+  overflow-wrap: anywhere;
+}
+
+.prefix-card small {
+  grid-area: meta;
+  color: #6b768c;
+}
+
 .empty-panel {
   border: 1px solid #dce3ef;
   border-radius: 8px;
@@ -195,6 +240,31 @@ code {
   text-decoration: none;
 }
 
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.breadcrumb-button {
+  height: 34px;
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #176b87;
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.breadcrumb-button::after {
+  content: " /";
+  color: #8b96a8;
+}
+
+.breadcrumb-button:last-child::after {
+  content: "";
+}
+
 .error-text {
   margin-top: 12px;
   color: #9b1c1c;
@@ -264,11 +334,44 @@ button:disabled {
   border: 1px solid #a8dfbd;
 }
 
+.warning {
+  background: #fff7e6;
+  color: #7a4b00;
+  border: 1px solid #f3cd7b;
+}
+
 .table-wrap {
   overflow-x: auto;
   border: 1px solid #dce3ef;
   border-radius: 8px;
   background: #fff;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #edf1f7;
+  padding: 14px 16px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #53617a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pagination-controls button {
+  height: 34px;
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #176b87;
+  padding: 0 10px;
+  font-weight: 800;
 }
 
 table {
@@ -444,5 +547,11 @@ tr:last-child td {
 
   .primary {
     width: 100%;
+  }
+
+  .table-header,
+  .pagination-controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

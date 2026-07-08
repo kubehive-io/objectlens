@@ -17,6 +17,7 @@
 - App-level users
 - RBAC per bucket/prefix
 - Background workers
+- Async background scans
 - Kubernetes Helm chart
 - Flux deployment
 
@@ -29,6 +30,10 @@
 - Audit logging for previews/downloads
 - Object preview
 - Bulk actions
+- Cursor-based pagination
+- Virtualized tables
+- Server-side sorting
+- Prefix-level statistics
 
 ## Phase 4: Homelab Platform Product
 
