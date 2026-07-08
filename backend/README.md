@@ -1,6 +1,6 @@
 # ObjectLens Backend
 
-FastAPI backend for ObjectLens. It talks to S3-compatible object storage with boto3 and stores indexed object metadata in SQLite for the PoC.
+FastAPI backend for ObjectLens. It talks to object storage through provider implementations, starting with Ceph RGW through the S3-compatible API, and stores indexed object metadata in SQLite for the PoC.
 
 ## Development
 

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -18,6 +19,7 @@ class BucketListResponse(BaseModel):
 
 
 class ObjectMetadata(BaseModel):
+    provider: str
     bucket: str
     key: str
     size: int
@@ -25,6 +27,7 @@ class ObjectMetadata(BaseModel):
     last_modified: datetime | None = None
     storage_class: str | None = None
     content_type: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
     indexed_at: datetime
 
 
@@ -43,3 +46,10 @@ class PresignDownloadResponse(BaseModel):
     bucket: str
     key: str
     url: str
+
+
+class ProviderResponse(BaseModel):
+    provider: str
+    display_name: str
+    endpoint_url: str | None = None
+    default_bucket: str | None = None

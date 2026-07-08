@@ -1,4 +1,5 @@
-set dotenv-load := false
+set dotenv-load := true
+set dotenv-filename := ".env"
 
 install:
     cd backend && uv sync
@@ -16,13 +17,22 @@ dev:
 
 lint:
     cd backend && uv run ruff check .
-    cd frontend && npm run lint || true
+    cd frontend && npm run lint
 
 format:
     cd backend && uv run ruff format .
 
 test:
     cd backend && uv run pytest
+
+docs:
+    mkdocs serve --dev-addr 0.0.0.0:8080
+
+docs-build:
+    mkdocs build --strict
+
+clean:
+    rm -rf backend/.venv frontend/node_modules frontend/.nuxt frontend/.output .pytest_cache .ruff_cache
 
 docker-up:
     docker compose up --build

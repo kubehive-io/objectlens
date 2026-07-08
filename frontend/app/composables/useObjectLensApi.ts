@@ -3,7 +3,20 @@ export type Bucket = {
   creation_date?: string | null;
 };
 
+export type HealthResponse = {
+  status: string;
+  service: string;
+};
+
+export type ProviderInfo = {
+  provider: string;
+  display_name: string;
+  endpoint_url?: string | null;
+  default_bucket?: string | null;
+};
+
 export type ObjectMetadata = {
+  provider: string;
   bucket: string;
   key: string;
   size: number;
@@ -11,6 +24,7 @@ export type ObjectMetadata = {
   last_modified?: string | null;
   storage_class?: string | null;
   content_type?: string | null;
+  metadata?: Record<string, unknown>;
   indexed_at: string;
 };
 
@@ -40,6 +54,8 @@ export function useObjectLensApi() {
   }
 
   return {
+    health: () => request<HealthResponse>("/health"),
+    provider: () => request<ProviderInfo>("/provider"),
     listBuckets: () => request<{ buckets: Bucket[] }>("/buckets"),
     listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),

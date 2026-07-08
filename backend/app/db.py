@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     Column,
     DateTime,
     Integer,
@@ -12,6 +13,7 @@ from sqlalchemy import (
     and_,
     create_engine,
     desc,
+    inspect,
     select,
 )
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
@@ -26,6 +28,7 @@ metadata = MetaData()
 object_metadata = Table(
     "object_metadata",
     metadata,
+    Column("provider", String, primary_key=True),
     Column("bucket", String, primary_key=True),
     Column("key", String, primary_key=True),
     Column("size", Integer, nullable=False),
@@ -33,6 +36,7 @@ object_metadata = Table(
     Column("last_modified", DateTime(timezone=True)),
     Column("storage_class", String),
     Column("content_type", String),
+    Column("metadata", JSON),
     Column("indexed_at", DateTime(timezone=True), nullable=False),
 )
 
@@ -50,7 +54,13 @@ def get_engine() -> Engine:
 
 
 def init_db() -> None:
-    metadata.create_all(get_engine())
+    engine = get_engine()
+    inspector = inspect(engine)
+    if inspector.has_table("object_metadata"):
+        primary_key = inspector.get_pk_constraint("object_metadata").get("constrained_columns", [])
+        if primary_key != ["provider", "bucket", "key"]:
+            object_metadata.drop(engine)
+    metadata.create_all(engine)
 
 
 def _normalize_dt(value: datetime | None) -> datetime | None:
@@ -61,10 +71,11 @@ def _normalize_dt(value: datetime | None) -> datetime | None:
     return value
 
 
-def upsert_objects(bucket: str, objects: list[dict[str, Any]]) -> int:
+def upsert_objects(provider: str, bucket: str, objects: list[dict[str, Any]]) -> int:
     indexed_at = datetime.now(UTC)
     rows = [
         {
+            "provider": provider,
             "bucket": bucket,
             "key": obj["key"],
             "size": obj["size"],
@@ -72,6 +83,7 @@ def upsert_objects(bucket: str, objects: list[dict[str, Any]]) -> int:
             "last_modified": _normalize_dt(obj.get("last_modified")),
             "storage_class": obj.get("storage_class"),
             "content_type": obj.get("content_type"),
+            "metadata": obj.get("metadata") or {},
             "indexed_at": indexed_at,
         }
         for obj in objects
@@ -81,13 +93,14 @@ def upsert_objects(bucket: str, objects: list[dict[str, Any]]) -> int:
 
     insert_stmt = sqlite_insert(object_metadata).values(rows)
     update_stmt = insert_stmt.on_conflict_do_update(
-        index_elements=["bucket", "key"],
+        index_elements=["provider", "bucket", "key"],
         set_={
             "size": insert_stmt.excluded.size,
             "etag": insert_stmt.excluded.etag,
             "last_modified": insert_stmt.excluded.last_modified,
             "storage_class": insert_stmt.excluded.storage_class,
             "content_type": insert_stmt.excluded.content_type,
+            "metadata": insert_stmt.excluded.metadata,
             "indexed_at": insert_stmt.excluded.indexed_at,
         },
     )
@@ -97,12 +110,13 @@ def upsert_objects(bucket: str, objects: list[dict[str, Any]]) -> int:
 
 
 def search_objects(
+    provider: str,
     bucket: str,
     prefix: str | None = None,
     search: str | None = None,
     limit: int = 100,
 ) -> list[dict[str, Any]]:
-    clauses = [object_metadata.c.bucket == bucket]
+    clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
     if prefix:
         clauses.append(object_metadata.c.key.like(f"{prefix}%"))
     if search:

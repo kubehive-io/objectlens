@@ -1,0 +1,33 @@
+.env
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+backend/.venv/
+backend/objectlens.db
+objectlens.db
+
+# Node / Nuxt
+node_modules/
+frontend/node_modules/
+.nuxt/
+frontend/.nuxt/
+.output/
+frontend/.output/
+frontend/.data/
+frontend/.nitro/
+npm-debug.log*
+
+# Devbox / local tooling
+.devbox/
+.uv-cache/
+.uv-bootstrap/
+
+# Build output
+dist/
+site/
+coverage/

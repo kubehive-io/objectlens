@@ -1,9 +1,10 @@
 from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Query
 
+from ..config import get_settings
 from ..db import search_objects
 from ..models import ObjectListResponse, ObjectMetadata, PresignDownloadResponse
-from ..s3_client import get_s3_client
+from ..providers import get_provider
 
 router = APIRouter(tags=["objects"])
 
@@ -16,7 +17,14 @@ def objects(
     limit: int = Query(default=100, ge=1, le=1000),
 ) -> ObjectListResponse:
     # TODO: Add OpenSearch support for large-scale metadata search.
-    rows = search_objects(bucket=bucket, prefix=prefix, search=search, limit=limit)
+    provider = get_provider(get_settings())
+    rows = search_objects(
+        provider=provider.provider,
+        bucket=bucket,
+        prefix=prefix,
+        search=search,
+        limit=limit,
+    )
     objects = [ObjectMetadata.model_validate(row) for row in rows]
     return ObjectListResponse(objects=objects, count=len(objects))
 
@@ -27,13 +35,12 @@ def presign_download(
     key: str = Query(..., min_length=1),
 ) -> PresignDownloadResponse:
     try:
-        url = get_s3_client().generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=3600,
-        )
+        provider = get_provider(get_settings())
+        url = provider.get_presigned_download_url(bucket=bucket, key=key)
     except (BotoCoreError, ClientError) as exc:
         detail = f"Failed to create download URL: {exc}"
         raise HTTPException(status_code=502, detail=detail) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return PresignDownloadResponse(bucket=bucket, key=key, url=url)

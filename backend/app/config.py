@@ -1,27 +1,54 @@
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     app_name: str = "ObjectLens"
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    cors_origins: str = "http://localhost:3000"
+    objectlens_provider: str = Field(
+        default="ceph",
+        validation_alias=AliasChoices("OBJECTLENS_PROVIDER", "objectlens_provider"),
+    )
 
-    s3_endpoint_url: str | None = None
-    s3_region: str = "us-east-1"
-    s3_access_key_id: str | None = None
-    s3_secret_access_key: str | None = None
-    s3_bucket: str | None = None
-    s3_force_path_style: bool = True
+    ceph_s3_endpoint_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CEPH_S3_ENDPOINT_URL", "ceph_s3_endpoint_url"),
+    )
+    ceph_s3_region: str = Field(
+        default="us-east-1",
+        validation_alias=AliasChoices("CEPH_S3_REGION", "ceph_s3_region"),
+    )
+    ceph_s3_access_key_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CEPH_S3_ACCESS_KEY_ID", "ceph_s3_access_key_id"),
+    )
+    ceph_s3_secret_access_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CEPH_S3_SECRET_ACCESS_KEY", "ceph_s3_secret_access_key"),
+    )
+    ceph_s3_default_bucket: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("CEPH_S3_DEFAULT_BUCKET", "ceph_s3_default_bucket"),
+    )
+    ceph_s3_verify_ssl: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CEPH_S3_VERIFY_SSL", "ceph_s3_verify_ssl"),
+    )
 
     database_url: str = "sqlite:///./objectlens.db"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "../.env"),
         env_prefix="OBJECTLENS_",
         case_sensitive=False,
+        extra="ignore",
     )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

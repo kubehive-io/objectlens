@@ -24,11 +24,13 @@ spec:
           env:
             - name: OBJECTLENS_DATABASE_URL
               value: sqlite:////data/objectlens.db
+            - name: OBJECTLENS_PROVIDER
+              value: ceph
             - name: OBJECTLENS_CORS_ORIGINS
-              value: '["http://localhost:3000"]'
+              value: "http://localhost:3000"
           envFrom:
             - secretRef:
-                name: objectlens-s3
+                name: objectlens-ceph
           volumeMounts:
             - name: metadata
               mountPath: /data
