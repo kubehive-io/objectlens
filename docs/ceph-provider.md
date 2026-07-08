@@ -4,6 +4,8 @@ Ceph RGW is the first supported ObjectLens provider.
 
 The provider uses the S3-compatible API through boto3. This keeps the implementation practical because Ceph Object Gateway already exposes common S3 operations such as bucket listing, object listing, metadata reads, and presigned downloads.
 
+Bucket visibility comes from Ceph RGW credentials. `GET /buckets` calls the provider API and returns only buckets the configured access key can list. If Ceph RGW denies bucket listing, ObjectLens returns a clear API error instead of falling back to static bucket names.
+
 ## Environment Variables
 
 ```env
@@ -38,3 +40,10 @@ If the endpoint uses a private certificate authority, configure the host trust s
 - Use Kubernetes Secrets for deployment.
 - Prefer scoped credentials with the minimum bucket access needed.
 - Rotate credentials if they are exposed in shell history, logs, or local files.
+
+## Preview Limitations
+
+- JSON and CSV previews read only a bounded byte range.
+- Image previews return a presigned URL instead of proxying large bytes through the API.
+- Parquet preview is optional and requires `pyarrow`; without it, ObjectLens returns an unsupported preview response with a download URL.
+- Preview and download activity should be audited in a later phase.

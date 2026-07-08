@@ -1,125 +1,38 @@
 <script setup lang="ts">
-import type { Bucket, ObjectMetadata, ProviderInfo } from "../composables/useObjectLensApi";
+import type { Bucket, ProviderInfo } from "../composables/useObjectLensApi";
 import { useObjectLensApi } from "../composables/useObjectLensApi";
 
 const api = useObjectLensApi();
 
 const buckets = ref<Bucket[]>([]);
 const provider = ref<ProviderInfo | null>(null);
-const selectedBucket = ref("");
-const search = ref("");
-const objects = ref<ObjectMetadata[]>([]);
-const loadingBuckets = ref(true);
-const loadingObjects = ref(false);
-const scanning = ref(false);
 const backendHealthy = ref(false);
+const loading = ref(true);
 const error = ref("");
-const notice = ref("");
-
-const hasBackendError = computed(() => !backendHealthy.value && Boolean(error.value));
-
-function formatBytes(value: number) {
-  if (value === 0) return "0 B";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
-  return `${(value / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
 
 function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  if (!value) return "Creation date unavailable";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
+    new Date(value),
+  );
 }
-
-async function refreshHealth() {
-  const response = await api.health();
-  backendHealthy.value = response.status === "ok";
-}
-
-async function loadProvider() {
-  provider.value = await api.provider();
-}
-
-async function loadBuckets() {
-  loadingBuckets.value = true;
-  try {
-    const response = await api.listBuckets();
-    buckets.value = response.buckets;
-    if (!selectedBucket.value) {
-      selectedBucket.value = provider.value?.default_bucket || response.buckets[0]?.name || "";
-    }
-  } finally {
-    loadingBuckets.value = false;
-  }
-}
-
-async function loadObjects() {
-  if (!selectedBucket.value) {
-    objects.value = [];
-    return;
-  }
-  loadingObjects.value = true;
-  error.value = "";
-  notice.value = "";
-  try {
-    const response = await api.listObjects({
-      bucket: selectedBucket.value,
-      search: search.value.trim() || undefined,
-      limit: 200,
-    });
-    objects.value = response.objects;
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "Failed to load indexed objects";
-  } finally {
-    loadingObjects.value = false;
-  }
-}
-
-async function scanBucket() {
-  if (!selectedBucket.value) return;
-  scanning.value = true;
-  error.value = "";
-  notice.value = "";
-  try {
-    const response = await api.scanBucket(selectedBucket.value);
-    notice.value = `Scan complete: ${response.scanned} objects scanned, ${response.indexed} indexed.`;
-    await loadObjects();
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "Scan failed";
-  } finally {
-    scanning.value = false;
-  }
-}
-
-async function downloadObject(key: string) {
-  if (!selectedBucket.value) return;
-  error.value = "";
-  try {
-    const response = await api.presignDownload(selectedBucket.value, key);
-    window.open(response.url, "_blank", "noopener,noreferrer");
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : "Failed to create download URL";
-  }
-}
-
-watch([selectedBucket, search], () => {
-  void loadObjects();
-});
 
 onMounted(async () => {
+  loading.value = true;
+  error.value = "";
   try {
-    await refreshHealth();
-    await loadProvider();
-    await loadBuckets();
-    await loadObjects();
+    const health = await api.health();
+    backendHealthy.value = health.status === "ok";
+    provider.value = await api.provider();
+    buckets.value = (await api.listBuckets()).buckets;
   } catch (err) {
     backendHealthy.value = false;
     error.value =
       err instanceof Error
         ? err.message
         : "ObjectLens backend is unavailable. Start it with `just backend` or `just dev`.";
+  } finally {
+    loading.value = false;
   }
 });
 </script>
@@ -131,10 +44,6 @@ onMounted(async () => {
         <h1>ObjectLens</h1>
         <p>Fast object access for Kubernetes and Ceph</p>
       </div>
-      <button class="primary" :disabled="!selectedBucket || scanning || !backendHealthy" @click="scanBucket">
-        <span :class="{ spin: scanning }">↻</span>
-        {{ scanning ? "Scanning" : "Scan bucket" }}
-      </button>
     </section>
 
     <section class="status-grid">
@@ -148,7 +57,7 @@ onMounted(async () => {
           </div>
           <div>
             <dt>Default bucket</dt>
-            <dd>{{ provider?.default_bucket || "Any accessible bucket" }}</dd>
+            <dd>{{ provider?.default_bucket || "No default bucket" }}</dd>
           </div>
         </dl>
       </article>
@@ -164,7 +73,7 @@ onMounted(async () => {
       </article>
     </section>
 
-    <section v-if="hasBackendError" class="backend-empty">
+    <section v-if="error" class="backend-empty">
       <h2>ObjectLens backend is not reachable</h2>
       <p>
         The dashboard is ready, but it cannot reach the API. Start the backend with
@@ -173,67 +82,30 @@ onMounted(async () => {
       <p class="error-text">{{ error }}</p>
     </section>
 
-    <template v-else>
-      <section class="toolbar">
-        <label>
-          Bucket
-          <select v-model="selectedBucket" :disabled="loadingBuckets || !backendHealthy">
-            <option value="" disabled>Select a bucket</option>
-            <option v-for="bucket in buckets" :key="bucket.name" :value="bucket.name">
-              {{ bucket.name }}
-            </option>
-          </select>
-        </label>
+    <section v-else class="section-block">
+      <div class="section-heading">
+        <div>
+          <h2>Visible buckets</h2>
+          <p>Buckets are returned from the current Ceph RGW credentials.</p>
+        </div>
+      </div>
 
-        <label>
-          Search objects
-          <input
-            v-model="search"
-            :disabled="!backendHealthy"
-            placeholder="backup, logs/, snapshot.parquet"
-          />
-        </label>
-      </section>
-
-      <div v-if="error" class="alert error">{{ error }}</div>
-      <div v-if="notice" class="alert success">{{ notice }}</div>
-
-      <section class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Object key</th>
-              <th>Size</th>
-              <th>Last modified</th>
-              <th>Storage class</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loadingObjects">
-              <td colspan="5" class="empty">Loading indexed objects...</td>
-            </tr>
-            <template v-else>
-              <tr v-for="object in objects" :key="`${object.provider}/${object.bucket}/${object.key}`">
-                <td class="key-cell">{{ object.key }}</td>
-                <td>{{ formatBytes(object.size) }}</td>
-                <td>{{ formatDate(object.last_modified) }}</td>
-                <td>{{ object.storage_class || "-" }}</td>
-                <td class="actions">
-                  <button class="icon-button" title="Download object" @click="downloadObject(object.key)">
-                    ↓
-                  </button>
-                </td>
-              </tr>
-            </template>
-            <tr v-if="!loadingObjects && objects.length === 0">
-              <td colspan="5" class="empty">
-                No indexed objects found. Scan a Ceph RGW bucket to populate the local metadata index.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </template>
+      <div v-if="loading" class="empty-panel">Loading visible buckets...</div>
+      <div v-else-if="buckets.length === 0" class="empty-panel">
+        No buckets are visible to the configured provider credentials.
+      </div>
+      <div v-else class="bucket-grid">
+        <NuxtLink
+          v-for="bucket in buckets"
+          :key="bucket.name"
+          class="bucket-card"
+          :to="`/buckets/${encodeURIComponent(bucket.name)}`"
+        >
+          <span class="label">Bucket</span>
+          <strong>{{ bucket.name }}</strong>
+          <p>{{ formatDate(bucket.creation_date) }}</p>
+        </NuxtLink>
+      </div>
+    </section>
   </main>
 </template>

@@ -4,6 +4,15 @@ ObjectLens is a Kubernetes-native object storage interface for fast access to Ce
 
 ObjectLens is documented with MkDocs Material.
 
+## Features
+
+- Ceph RGW provider
+- Visible bucket listing based on provider credentials
+- Bucket detail pages
+- Indexed search
+- JSON, CSV, Parquet, and image preview
+- Presigned downloads
+
 ## Quick Start
 
 ```bash

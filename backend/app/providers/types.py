@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -7,6 +8,13 @@ from pydantic import BaseModel, Field
 class BucketInfo(BaseModel):
     name: str
     creation_date: datetime | None = None
+
+
+class BucketDetails(BucketInfo):
+    provider: str
+    indexed_object_count: int = 0
+    indexed_total_size: int = 0
+    last_indexed_at: datetime | None = None
 
 
 class ObjectInfo(BaseModel):
@@ -20,6 +28,30 @@ class ObjectInfo(BaseModel):
 
 class ObjectMetadata(ObjectInfo):
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ObjectPreviewType(StrEnum):
+    JSON = "json"
+    CSV = "csv"
+    PARQUET = "parquet"
+    IMAGE = "image"
+    UNSUPPORTED = "unsupported"
+
+
+class ObjectPreview(BaseModel):
+    bucket: str
+    key: str
+    preview_type: ObjectPreviewType
+    content_type: str | None = None
+    size: int | None = None
+    truncated: bool = False
+    text: str | None = None
+    headers: list[str] | None = None
+    rows: list[dict[str, Any]] | None = None
+    schema_fields: list[dict[str, str]] | None = None
+    image_url: str | None = None
+    download_url: str | None = None
+    reason: str | None = None
 
 
 class ObjectListResult(BaseModel):

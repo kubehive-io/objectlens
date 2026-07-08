@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from .types import BucketInfo, ObjectListResult, ObjectMetadata
+from .types import BucketDetails, BucketInfo, ObjectListResult, ObjectMetadata, ObjectPreview
 
 
 class ObjectStorageProvider(ABC):
@@ -11,6 +11,10 @@ class ObjectStorageProvider(ABC):
 
     @abstractmethod
     def list_buckets(self) -> list[BucketInfo]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_bucket_info(self, bucket: str) -> BucketDetails:
         raise NotImplementedError
 
     @abstractmethod
@@ -38,4 +42,13 @@ class ObjectStorageProvider(ABC):
         bucket: str,
         key: str,
     ) -> ObjectMetadata:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_object_preview(
+        self,
+        bucket: str,
+        key: str,
+        max_bytes: int = 1024 * 1024,
+    ) -> ObjectPreview:
         raise NotImplementedError

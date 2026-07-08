@@ -3,6 +3,15 @@ export type Bucket = {
   creation_date?: string | null;
 };
 
+export type BucketDetails = {
+  provider: string;
+  name: string;
+  creation_date?: string | null;
+  indexed_object_count: number;
+  indexed_total_size: number;
+  last_indexed_at?: string | null;
+};
+
 export type HealthResponse = {
   status: string;
   service: string;
@@ -25,7 +34,39 @@ export type ObjectMetadata = {
   storage_class?: string | null;
   content_type?: string | null;
   metadata?: Record<string, unknown>;
-  indexed_at: string;
+  indexed_at?: string | null;
+};
+
+export type PrefixSummary = {
+  prefix: string;
+  object_count: number;
+  total_size: number;
+};
+
+export type BucketSummary = {
+  bucket: string;
+  object_count: number;
+  total_size: number;
+  last_indexed_at?: string | null;
+  largest_objects: ObjectMetadata[];
+  recent_objects: ObjectMetadata[];
+  top_prefixes: PrefixSummary[];
+};
+
+export type ObjectPreview = {
+  bucket: string;
+  key: string;
+  preview_type: "json" | "csv" | "parquet" | "image" | "unsupported";
+  content_type?: string | null;
+  size?: number | null;
+  truncated: boolean;
+  text?: string | null;
+  headers?: string[] | null;
+  rows?: Record<string, unknown>[] | null;
+  schema_fields?: { name: string; type: string }[] | null;
+  image_url?: string | null;
+  download_url?: string | null;
+  reason?: string | null;
 };
 
 export type ScanResponse = {
@@ -57,8 +98,14 @@ export function useObjectLensApi() {
     health: () => request<HealthResponse>("/health"),
     provider: () => request<ProviderInfo>("/provider"),
     listBuckets: () => request<{ buckets: Bucket[] }>("/buckets"),
-    listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number }) =>
+    bucketDetails: (bucket: string) => request<BucketDetails>(`/buckets/${encodeURIComponent(bucket)}`),
+    bucketSummary: (bucket: string) => request<BucketSummary>(`/buckets/${encodeURIComponent(bucket)}/summary`),
+    listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),
+    listBucketObjects: (bucket: string, params: { prefix?: string; search?: string; limit?: number; offset?: number }) =>
+      request<{ objects: ObjectMetadata[]; count: number }>(`/buckets/${encodeURIComponent(bucket)}/objects`, {
+        query: params,
+      }),
     scanBucket: (bucket: string) =>
       request<ScanResponse>("/index/scan", {
         method: "POST",
@@ -66,6 +113,14 @@ export function useObjectLensApi() {
       }),
     presignDownload: (bucket: string, key: string) =>
       request<{ bucket: string; key: string; url: string }>("/objects/presign-download", {
+        query: { bucket, key },
+      }),
+    objectPreview: (bucket: string, key: string) =>
+      request<ObjectPreview>("/objects/preview", {
+        query: { bucket, key },
+      }),
+    objectMetadata: (bucket: string, key: string) =>
+      request<ObjectMetadata>("/objects/metadata", {
         query: { bucket, key },
       }),
   };

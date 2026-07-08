@@ -6,6 +6,8 @@ It exists because direct object storage tooling is powerful but slow for day-to-
 
 The first real target is a homelab Ceph cluster exposed through Ceph Object Gateway. ObjectLens starts as a proof of concept, but the backend is structured around a provider abstraction so more storage systems can be added later without changing the API or frontend model.
 
+The current PoC includes auth-aware bucket listing, bucket details, indexed search, presigned downloads, and limited previews for JSON, CSV, Parquet, and images. Bucket visibility comes from the configured Ceph RGW credentials.
+
 ```mermaid
 flowchart TD
   User[User / Platform Team] --> UI[Nuxt 4 Frontend]
@@ -25,6 +27,7 @@ flowchart TD
 - Ceph RGW provider using the S3-compatible API through boto3.
 - SQLite metadata index for the PoC.
 - Manual bucket scan to populate searchable metadata.
+- Safe object previews that read only a limited amount of object data.
 
 ## Design Direction
 

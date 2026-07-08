@@ -6,6 +6,7 @@ from sqlalchemy import (
     JSON,
     Column,
     DateTime,
+    Index,
     Integer,
     MetaData,
     String,
@@ -13,6 +14,7 @@ from sqlalchemy import (
     and_,
     create_engine,
     desc,
+    func,
     inspect,
     select,
 )
@@ -40,6 +42,26 @@ object_metadata = Table(
     Column("indexed_at", DateTime(timezone=True), nullable=False),
 )
 
+Index("ix_object_metadata_provider_bucket", object_metadata.c.provider, object_metadata.c.bucket)
+Index(
+    "ix_object_metadata_provider_bucket_key",
+    object_metadata.c.provider,
+    object_metadata.c.bucket,
+    object_metadata.c.key,
+)
+Index(
+    "ix_object_metadata_provider_bucket_last_modified",
+    object_metadata.c.provider,
+    object_metadata.c.bucket,
+    object_metadata.c.last_modified,
+)
+Index(
+    "ix_object_metadata_provider_bucket_size",
+    object_metadata.c.provider,
+    object_metadata.c.bucket,
+    object_metadata.c.size,
+)
+
 
 def _database_url() -> str:
     database_url = get_settings().database_url
@@ -61,6 +83,8 @@ def init_db() -> None:
         if primary_key != ["provider", "bucket", "key"]:
             object_metadata.drop(engine)
     metadata.create_all(engine)
+    for index in object_metadata.indexes:
+        index.create(bind=engine, checkfirst=True)
 
 
 def _normalize_dt(value: datetime | None) -> datetime | None:
@@ -115,6 +139,7 @@ def search_objects(
     prefix: str | None = None,
     search: str | None = None,
     limit: int = 100,
+    offset: int = 0,
 ) -> list[dict[str, Any]]:
     clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
     if prefix:
@@ -127,8 +152,69 @@ def search_objects(
         .where(and_(*clauses))
         .order_by(desc(object_metadata.c.last_modified), object_metadata.c.key.asc())
         .limit(limit)
+        .offset(offset)
     )
 
     with get_engine().connect() as conn:
         rows = conn.execute(statement).mappings().all()
     return [dict(row) for row in rows]
+
+
+def bucket_index_stats(provider: str, bucket: str) -> dict[str, Any]:
+    statement = (
+        select(
+            func.count().label("object_count"),
+            func.coalesce(func.sum(object_metadata.c.size), 0).label("total_size"),
+            func.max(object_metadata.c.indexed_at).label("last_indexed_at"),
+        )
+        .where(object_metadata.c.provider == provider)
+        .where(object_metadata.c.bucket == bucket)
+    )
+    with get_engine().connect() as conn:
+        row = conn.execute(statement).mappings().one()
+    return dict(row)
+
+
+def recent_objects(provider: str, bucket: str, limit: int = 10) -> list[dict[str, Any]]:
+    statement = (
+        select(object_metadata)
+        .where(object_metadata.c.provider == provider)
+        .where(object_metadata.c.bucket == bucket)
+        .order_by(desc(object_metadata.c.last_modified), object_metadata.c.key.asc())
+        .limit(limit)
+    )
+    with get_engine().connect() as conn:
+        rows = conn.execute(statement).mappings().all()
+    return [dict(row) for row in rows]
+
+
+def largest_objects(provider: str, bucket: str, limit: int = 10) -> list[dict[str, Any]]:
+    statement = (
+        select(object_metadata)
+        .where(object_metadata.c.provider == provider)
+        .where(object_metadata.c.bucket == bucket)
+        .order_by(desc(object_metadata.c.size), object_metadata.c.key.asc())
+        .limit(limit)
+    )
+    with get_engine().connect() as conn:
+        rows = conn.execute(statement).mappings().all()
+    return [dict(row) for row in rows]
+
+
+def top_prefixes(provider: str, bucket: str, limit: int = 10) -> list[dict[str, Any]]:
+    rows = search_objects(provider=provider, bucket=bucket, limit=1000)
+    summaries: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        key = row["key"]
+        prefix = key.split("/", 1)[0] + "/" if "/" in key else "(root)"
+        summary = summaries.setdefault(
+            prefix,
+            {"prefix": prefix, "object_count": 0, "total_size": 0},
+        )
+        summary["object_count"] += 1
+        summary["total_size"] += row["size"]
+    return sorted(
+        summaries.values(),
+        key=lambda item: (item["object_count"], item["total_size"], item["prefix"]),
+        reverse=True,
+    )[:limit]

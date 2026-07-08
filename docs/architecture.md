@@ -62,3 +62,35 @@ The scan endpoint pages through provider objects and upserts metadata into SQLit
 ## Future Search and Deployment
 
 OpenSearch can take over full-text and large-scale object search. Kubernetes manifests exist today, and the project is shaped to move toward Helm and Flux without source code changes.
+
+## Preview Flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI as Nuxt Frontend
+  participant API as FastAPI Backend
+  participant Provider as Provider Interface
+  participant Ceph as Ceph RGW
+
+  User->>UI: Open object preview
+  UI->>API: GET /objects/preview?bucket=&key=
+  API->>Provider: get_object_preview(bucket, key)
+  Provider->>Ceph: Get object range / metadata
+  Ceph-->>Provider: Object bytes or metadata
+  Provider-->>API: Preview result
+  API-->>UI: JSON / CSV / Parquet / Image preview
+  UI-->>User: Render preview
+```
+
+## Bucket Visibility
+
+```mermaid
+flowchart TD
+  User[User opens ObjectLens] --> UI[Frontend]
+  UI --> API[GET /buckets]
+  API --> Provider[Provider Interface]
+  Provider --> Ceph[Ceph RGW list_buckets]
+  Ceph --> Allowed[Only buckets allowed by credentials]
+  Allowed --> UI
+```

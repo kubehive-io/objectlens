@@ -8,11 +8,13 @@
 - SQLite metadata index
 - Manual bucket scan
 - Presigned downloads
+- File previews
 
 ## Phase 2: Better Platform Integration
 
 - Postgres metadata DB
 - OIDC login
+- App-level users
 - RBAC per bucket/prefix
 - Background workers
 - Kubernetes Helm chart
@@ -24,6 +26,7 @@
 - S3 event-based indexing
 - Multi-provider support
 - Audit logs
+- Audit logging for previews/downloads
 - Object preview
 - Bulk actions
 

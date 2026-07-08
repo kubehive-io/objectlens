@@ -1,3 +1,6 @@
+import csv
+import io
+import json
 from typing import Any
 
 import boto3
@@ -5,7 +8,17 @@ from botocore.config import Config
 
 from ..config import Settings
 from .base import ObjectStorageProvider
-from .types import BucketInfo, ObjectInfo, ObjectListResult, ObjectMetadata
+from .types import (
+    BucketDetails,
+    BucketInfo,
+    ObjectInfo,
+    ObjectListResult,
+    ObjectMetadata,
+    ObjectPreview,
+    ObjectPreviewType,
+)
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 class CephObjectStorageProvider(ObjectStorageProvider):
@@ -36,14 +49,20 @@ class CephObjectStorageProvider(ObjectStorageProvider):
         return boto3.client(**kwargs)
 
     def list_buckets(self) -> list[BucketInfo]:
-        if self.default_bucket:
-            return [BucketInfo(name=self.default_bucket)]
-
         response = self._client.list_buckets()
         return [
             BucketInfo(name=bucket["Name"], creation_date=bucket.get("CreationDate"))
             for bucket in response.get("Buckets", [])
         ]
+
+    def get_bucket_info(self, bucket: str) -> BucketDetails:
+        self._client.head_bucket(Bucket=bucket)
+        creation_date = None
+        for visible_bucket in self.list_buckets():
+            if visible_bucket.name == bucket:
+                creation_date = visible_bucket.creation_date
+                break
+        return BucketDetails(provider=self.provider, name=bucket, creation_date=creation_date)
 
     def list_objects(
         self,
@@ -104,4 +123,232 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             storage_class=response.get("StorageClass"),
             content_type=response.get("ContentType"),
             metadata=response.get("Metadata", {}),
+        )
+
+    def get_object_preview(
+        self,
+        bucket: str,
+        key: str,
+        max_bytes: int = 1024 * 1024,
+    ) -> ObjectPreview:
+        metadata = self.get_object_metadata(bucket=bucket, key=key)
+        content_type = metadata.content_type
+        preview_type = self._detect_preview_type(key, content_type)
+        download_url = self.get_presigned_download_url(bucket=bucket, key=key)
+
+        if preview_type == ObjectPreviewType.IMAGE:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.IMAGE,
+                content_type=content_type,
+                size=metadata.size,
+                image_url=download_url,
+                download_url=download_url,
+                reason="Image previews use a presigned URL and do not proxy object bytes.",
+            )
+
+        if preview_type == ObjectPreviewType.UNSUPPORTED:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=metadata.size,
+                download_url=download_url,
+                reason="Object type is not supported for inline preview.",
+            )
+
+        content = self._read_preview_bytes(bucket=bucket, key=key, max_bytes=max_bytes)
+        truncated = metadata.size > len(content)
+
+        if preview_type == ObjectPreviewType.JSON:
+            return self._json_preview(
+                bucket,
+                key,
+                content_type,
+                metadata.size,
+                content,
+                truncated,
+                download_url,
+            )
+        if preview_type == ObjectPreviewType.CSV:
+            return self._csv_preview(
+                bucket,
+                key,
+                content_type,
+                metadata.size,
+                content,
+                truncated,
+                download_url,
+            )
+        if preview_type == ObjectPreviewType.PARQUET:
+            return self._parquet_preview(
+                bucket,
+                key,
+                content_type,
+                metadata.size,
+                content,
+                truncated,
+                download_url,
+            )
+
+        return ObjectPreview(
+            bucket=bucket,
+            key=key,
+            preview_type=ObjectPreviewType.UNSUPPORTED,
+            content_type=content_type,
+            size=metadata.size,
+            download_url=download_url,
+            reason="Object type is not supported for inline preview.",
+        )
+
+    def _read_preview_bytes(self, bucket: str, key: str, max_bytes: int) -> bytes:
+        response = self._client.get_object(Bucket=bucket, Key=key, Range=f"bytes=0-{max_bytes - 1}")
+        body = response["Body"]
+        try:
+            return body.read(max_bytes)
+        finally:
+            body.close()
+
+    def _detect_preview_type(self, key: str, content_type: str | None) -> ObjectPreviewType:
+        lower_key = key.lower()
+        lower_content_type = (content_type or "").lower()
+        is_image = lower_content_type.startswith("image/") or any(
+            lower_key.endswith(ext) for ext in IMAGE_EXTENSIONS
+        )
+        if is_image:
+            return ObjectPreviewType.IMAGE
+        if "json" in lower_content_type or lower_key.endswith(".json"):
+            return ObjectPreviewType.JSON
+        if "csv" in lower_content_type or lower_key.endswith(".csv"):
+            return ObjectPreviewType.CSV
+        if lower_key.endswith(".parquet"):
+            return ObjectPreviewType.PARQUET
+        return ObjectPreviewType.UNSUPPORTED
+
+    def _json_preview(
+        self,
+        bucket: str,
+        key: str,
+        content_type: str | None,
+        size: int,
+        content: bytes,
+        truncated: bool,
+        download_url: str,
+    ) -> ObjectPreview:
+        try:
+            parsed = json.loads(content.decode("utf-8"))
+            text = json.dumps(parsed, indent=2, sort_keys=True)
+            reason = "Preview reads only a limited amount of the object." if truncated else None
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=size,
+                truncated=truncated,
+                download_url=download_url,
+                reason=f"JSON preview failed: {exc}",
+            )
+        return ObjectPreview(
+            bucket=bucket,
+            key=key,
+            preview_type=ObjectPreviewType.JSON,
+            content_type=content_type,
+            size=size,
+            truncated=truncated,
+            text=text,
+            download_url=download_url,
+            reason=reason,
+        )
+
+    def _csv_preview(
+        self,
+        bucket: str,
+        key: str,
+        content_type: str | None,
+        size: int,
+        content: bytes,
+        truncated: bool,
+        download_url: str,
+    ) -> ObjectPreview:
+        try:
+            sample = content.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=size,
+                truncated=truncated,
+                download_url=download_url,
+                reason=f"CSV preview failed: {exc}",
+            )
+        reader = csv.DictReader(io.StringIO(sample))
+        rows = [row for _, row in zip(range(25), reader, strict=False)]
+        return ObjectPreview(
+            bucket=bucket,
+            key=key,
+            preview_type=ObjectPreviewType.CSV,
+            content_type=content_type,
+            size=size,
+            truncated=truncated,
+            headers=reader.fieldnames or [],
+            rows=rows,
+            download_url=download_url,
+            reason="Preview reads only a limited amount of the object." if truncated else None,
+        )
+
+    def _parquet_preview(
+        self,
+        bucket: str,
+        key: str,
+        content_type: str | None,
+        size: int,
+        content: bytes,
+        truncated: bool,
+        download_url: str,
+    ) -> ObjectPreview:
+        try:
+            import pyarrow.parquet as pq
+        except ImportError:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=size,
+                truncated=truncated,
+                download_url=download_url,
+                reason="Parquet preview requires optional pyarrow support.",
+            )
+        if truncated:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=size,
+                truncated=truncated,
+                download_url=download_url,
+                reason=(
+                    "Parquet preview needs the full file footer; "
+                    "object is larger than the preview limit."
+                ),
+            )
+        table = pq.read_table(io.BytesIO(content))
+        rows = table.slice(0, 25).to_pylist()
+        schema_fields = [{"name": field.name, "type": str(field.type)} for field in table.schema]
+        return ObjectPreview(
+            bucket=bucket,
+            key=key,
+            preview_type=ObjectPreviewType.PARQUET,
+            content_type=content_type,
+            size=size,
+            rows=rows,
+            schema_fields=schema_fields,
+            download_url=download_url,
         )

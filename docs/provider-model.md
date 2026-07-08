@@ -8,11 +8,14 @@ Ceph RGW is the first target, but ObjectLens should not be hardcoded to Ceph or 
 
 ## Provider Interface
 
-A provider must implement:
+A provider controls bucket listing, object listing, object metadata, previews, and presigned URLs. A provider must implement:
 
 ```python
 class ObjectStorageProvider:
     def list_buckets(self) -> list[BucketInfo]:
+        ...
+
+    def get_bucket_info(self, bucket: str) -> BucketDetails:
         ...
 
     def list_objects(
@@ -38,13 +41,24 @@ class ObjectStorageProvider:
         key: str,
     ) -> ObjectMetadata:
         ...
+
+    def get_object_preview(
+        self,
+        bucket: str,
+        key: str,
+        max_bytes: int = 1024 * 1024,
+    ) -> ObjectPreview:
+        ...
 ```
 
 Shared provider types include:
 
 - `BucketInfo`
+- `BucketDetails`
 - `ObjectInfo`
 - `ObjectMetadata`
+- `ObjectPreview`
+- `ObjectPreviewType`
 - `ObjectListResult`
 - `ProviderConfig`
 
