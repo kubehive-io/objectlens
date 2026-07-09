@@ -1,0 +1,30 @@
+providers:
+  - id: ceph-homelab
+    name: Ceph Homelab
+    type: ceph
+    endpoint_url: http://ceph-rgw.local:7480
+    region: us-east-1
+    access_key_id: change-me
+    secret_access_key: change-me
+    default_bucket:
+    verify_ssl: false
+
+  - id: garage-local
+    name: Garage Local
+    type: garage
+    endpoint_url: http://localhost:3900
+    region: garage
+    access_key_id: change-me
+    secret_access_key: change-me
+    default_bucket:
+    verify_ssl: false
+
+  - id: aws-prod
+    name: AWS Production
+    type: aws
+    endpoint_url:
+    region: eu-west-1
+    access_key_id: change-me
+    secret_access_key: change-me
+    default_bucket:
+    verify_ssl: true

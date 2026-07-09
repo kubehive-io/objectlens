@@ -155,6 +155,66 @@ def upsert_objects(provider: str, bucket: str, objects: list[dict[str, Any]]) ->
     return len(rows)
 
 
+def delete_object_metadata(provider: str, bucket: str, key: str) -> int:
+    statement = (
+        object_metadata.delete()
+        .where(object_metadata.c.provider == provider)
+        .where(object_metadata.c.bucket == bucket)
+        .where(object_metadata.c.key == key)
+    )
+    with get_engine().begin() as conn:
+        result = conn.execute(statement)
+    return int(result.rowcount or 0)
+
+
+def _parent_prefix(prefix: str) -> str:
+    normalized = prefix.rstrip("/")
+    if "/" not in normalized:
+        return ""
+    return normalized.rsplit("/", 1)[0] + "/"
+
+
+def delete_prefix_metadata(provider: str, bucket: str, prefix: str) -> int:
+    metadata_statement = (
+        object_metadata.delete()
+        .where(object_metadata.c.provider == provider)
+        .where(object_metadata.c.bucket == bucket)
+        .where(object_metadata.c.key.like(f"{prefix}%"))
+    )
+    prefix_statement = (
+        object_prefixes.delete()
+        .where(object_prefixes.c.provider == provider)
+        .where(object_prefixes.c.bucket == bucket)
+        .where(
+            (object_prefixes.c.prefix == prefix)
+            | (object_prefixes.c.prefix.like(f"{prefix}%"))
+            | (object_prefixes.c.parent_prefix.like(f"{prefix}%"))
+        )
+    )
+    parent_statement = (
+        object_prefixes.delete()
+        .where(object_prefixes.c.provider == provider)
+        .where(object_prefixes.c.bucket == bucket)
+        .where(object_prefixes.c.parent_prefix == _parent_prefix(prefix))
+        .where(object_prefixes.c.prefix == prefix)
+    )
+    state_statement = (
+        prefix_index_state.delete()
+        .where(prefix_index_state.c.provider == provider)
+        .where(prefix_index_state.c.bucket == bucket)
+        .where(
+            (prefix_index_state.c.prefix == prefix)
+            | (prefix_index_state.c.prefix.like(f"{prefix}%"))
+        )
+    )
+    with get_engine().begin() as conn:
+        metadata_result = conn.execute(metadata_statement)
+        conn.execute(prefix_statement)
+        conn.execute(parent_statement)
+        conn.execute(state_statement)
+    return int(metadata_result.rowcount or 0)
+
+
 def is_prefix_indexed(provider: str, bucket: str, prefix: str) -> bool:
     statement = (
         select(prefix_index_state.c.indexed_at)

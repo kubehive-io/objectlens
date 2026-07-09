@@ -11,6 +11,10 @@ class Settings(BaseSettings):
         default="ceph",
         validation_alias=AliasChoices("OBJECTLENS_PROVIDER", "objectlens_provider"),
     )
+    providers_config_file: str = Field(
+        default=".objectlens.providers.yaml",
+        validation_alias=AliasChoices("OBJECTLENS_PROVIDERS_CONFIG", "providers_config_file"),
+    )
 
     ceph_s3_endpoint_url: str | None = Field(
         default=None,
@@ -35,6 +39,31 @@ class Settings(BaseSettings):
     ceph_s3_verify_ssl: bool = Field(
         default=False,
         validation_alias=AliasChoices("CEPH_S3_VERIFY_SSL", "ceph_s3_verify_ssl"),
+    )
+
+    garage_s3_endpoint_url: str | None = Field(
+        default="http://localhost:3900",
+        validation_alias=AliasChoices("GARAGE_S3_ENDPOINT_URL", "garage_s3_endpoint_url"),
+    )
+    garage_s3_region: str = Field(
+        default="garage",
+        validation_alias=AliasChoices("GARAGE_S3_REGION", "garage_s3_region"),
+    )
+    garage_s3_access_key_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GARAGE_S3_ACCESS_KEY_ID", "garage_s3_access_key_id"),
+    )
+    garage_s3_secret_access_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GARAGE_S3_SECRET_ACCESS_KEY", "garage_s3_secret_access_key"),
+    )
+    garage_s3_default_bucket: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GARAGE_S3_DEFAULT_BUCKET", "garage_s3_default_bucket"),
+    )
+    garage_s3_verify_ssl: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("GARAGE_S3_VERIFY_SSL", "garage_s3_verify_ssl"),
     )
 
     database_url: str = "sqlite:///./objectlens.db"

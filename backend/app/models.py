@@ -113,10 +113,91 @@ class PresignDownloadResponse(BaseModel):
     url: str
 
 
+class DeleteObjectResponse(BaseModel):
+    bucket: str
+    key: str
+    deleted: bool
+
+
+class DeletePrefixResponse(BaseModel):
+    bucket: str
+    prefix: str
+    deleted_count: int
+    errors: list[str] = Field(default_factory=list)
+
+
+class UploadObjectResponse(ObjectMetadata):
+    pass
+
+
+class RenameObjectRequest(BaseModel):
+    bucket: str
+    source_key: str
+    target_key: str
+    overwrite: bool = False
+
+
+class RenamePrefixRequest(BaseModel):
+    bucket: str
+    source_prefix: str
+    target_prefix: str
+    overwrite: bool = False
+
+
+class MoveItem(BaseModel):
+    type: str
+    key: str | None = None
+    prefix: str | None = None
+
+
+class MoveObjectsRequest(BaseModel):
+    bucket: str
+    items: list[MoveItem]
+    target_prefix: str
+    overwrite: bool = False
+
+
+class MergePrefixesRequest(BaseModel):
+    bucket: str
+    source_prefix: str
+    target_prefix: str
+    conflict_strategy: str = "fail"
+
+
+class OperationStatus(BaseModel):
+    operation_id: str
+    type: str
+    status: str
+    total: int = 0
+    completed: int = 0
+    failed: int = 0
+    message: str = ""
+    errors: list[str] = Field(default_factory=list)
+
+
+class ObjectOperationSummary(BaseModel):
+    operation_id: str
+    status: str
+    total_objects: int = 0
+    moved_objects: int = 0
+    skipped_objects: int = 0
+    conflicts: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+
+class MergePrefixesResponse(ObjectOperationSummary):
+    source_prefix: str
+    target_prefix: str
+
+
 class ProviderResponse(BaseModel):
+    id: str | None = None
+    name: str | None = None
+    type: str | None = None
     provider: str
     display_name: str
     endpoint_url: str | None = None
+    region: str | None = None
     default_bucket: str | None = None
 
 

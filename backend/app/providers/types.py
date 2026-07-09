@@ -67,8 +67,47 @@ class ObjectListResult(BaseModel):
     is_truncated: bool = False
 
 
+class DeleteObjectResult(BaseModel):
+    bucket: str
+    key: str
+    deleted: bool = True
+
+
+class DeletePrefixResult(BaseModel):
+    bucket: str
+    prefix: str
+    deleted_count: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class UploadObjectResult(ObjectInfo):
+    bucket: str
+
+
 class ProviderConfig(BaseModel):
     provider: str
     display_name: str
     endpoint_url: str | None = None
+    default_bucket: str | None = None
+
+
+class ProviderConnection(BaseModel):
+    id: str
+    name: str
+    type: str
+    endpoint_url: str | None = None
+    region: str = "us-east-1"
+    access_key_id: str | None = None
+    secret_access_key: str | None = None
+    verify_ssl: bool = True
+    default_bucket: str | None = None
+
+
+class ProviderConnectionPublic(BaseModel):
+    id: str
+    name: str
+    type: str
+    display_name: str
+    endpoint_url: str | None = None
+    region: str
     default_bucket: str | None = None

@@ -18,9 +18,23 @@ export type HealthResponse = {
 };
 
 export type ProviderInfo = {
+  id?: string | null;
+  name?: string | null;
+  type?: string | null;
   provider: string;
   display_name: string;
   endpoint_url?: string | null;
+  region?: string | null;
+  default_bucket?: string | null;
+};
+
+export type ProviderConnection = {
+  id: string;
+  name: string;
+  type: string;
+  display_name: string;
+  endpoint_url?: string | null;
+  region: string;
   default_bucket?: string | null;
 };
 
@@ -115,13 +129,47 @@ export type ScanResponse = {
   indexed: number;
 };
 
+export type DeletePrefixResponse = {
+  bucket: string;
+  prefix: string;
+  deleted_count: number;
+  errors: string[];
+};
+
+export type OperationSummary = {
+  operation_id: string;
+  status: string;
+  total_objects: number;
+  moved_objects: number;
+  skipped_objects?: number;
+  conflicts: string[];
+  errors: string[];
+  source_prefix?: string;
+  target_prefix?: string;
+};
+
+export type OperationStatus = {
+  operation_id: string;
+  type: string;
+  status: string;
+  total: number;
+  completed: number;
+  failed: number;
+  message: string;
+  errors: string[];
+};
+
 export function useObjectLensApi() {
   const config = useRuntimeConfig();
   const baseUrl = config.public.apiBaseUrl;
 
   async function request<T>(
     path: string,
-    options?: { method?: "GET" | "POST"; query?: Record<string, string | number | undefined> },
+    options?: {
+      method?: "GET" | "POST" | "DELETE";
+      query?: Record<string, string | number | undefined>;
+      body?: BodyInit | Record<string, unknown>;
+    },
   ): Promise<T> {
     try {
       return await $fetch<T>(path, {
@@ -137,34 +185,123 @@ export function useObjectLensApi() {
   return {
     health: () => request<HealthResponse>("/health"),
     provider: () => request<ProviderInfo>("/provider"),
+    listProviders: () => request<ProviderConnection[]>("/providers"),
+    providerConnection: (providerId: string) =>
+      request<ProviderConnection>(`/providers/${encodeURIComponent(providerId)}`),
     listBuckets: () => request<{ buckets: Bucket[] }>("/buckets"),
+    listProviderBuckets: (providerId: string) =>
+      request<{ buckets: Bucket[] }>(`/providers/${encodeURIComponent(providerId)}/buckets`),
     bucketDetails: (bucket: string) => request<BucketDetails>(`/buckets/${encodeURIComponent(bucket)}`),
+    providerBucketDetails: (providerId: string, bucket: string) =>
+      request<BucketDetails>(
+        `/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}`,
+      ),
     bucketSummary: (bucket: string) => request<BucketSummary>(`/buckets/${encodeURIComponent(bucket)}/summary`),
+    providerBucketSummary: (providerId: string, bucket: string) =>
+      request<BucketSummary>(
+        `/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/summary`,
+      ),
     listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),
     listBucketObjects: (
       bucket: string,
-      params: { prefix?: string; search?: string; limit?: number; offset?: number; delimiter?: string },
+      params: {
+        prefix?: string;
+        search?: string;
+        limit?: number;
+        offset?: number;
+        delimiter?: string;
+        providerId?: string;
+      },
     ) =>
-      request<BucketObjectListing>(`/buckets/${encodeURIComponent(bucket)}/objects`, {
+      request<BucketObjectListing>(
+        params.providerId
+          ? `/providers/${encodeURIComponent(params.providerId)}/buckets/${encodeURIComponent(bucket)}/objects`
+          : `/buckets/${encodeURIComponent(bucket)}/objects`,
+        {
         query: params,
-      }),
-    scanBucket: (bucket: string) =>
-      request<ScanResponse>("/index/scan", {
+        },
+      ),
+    scanBucket: (bucket: string, providerId?: string) =>
+      request<ScanResponse>(providerId ? `/providers/${encodeURIComponent(providerId)}/index/scan` : "/index/scan", {
         method: "POST",
         query: { bucket },
       }),
-    presignDownload: (bucket: string, key: string) =>
-      request<{ bucket: string; key: string; url: string }>("/objects/presign-download", {
+    presignDownload: (bucket: string, key: string, providerId?: string) =>
+      request<{ bucket: string; key: string; url: string }>(
+        providerId
+          ? `/providers/${encodeURIComponent(providerId)}/objects/presign-download`
+          : "/objects/presign-download",
+        {
+        query: { bucket, key },
+        },
+      ),
+    objectPreview: (bucket: string, key: string, providerId?: string) =>
+      request<ObjectPreview>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/preview` : "/objects/preview", {
         query: { bucket, key },
       }),
-    objectPreview: (bucket: string, key: string) =>
-      request<ObjectPreview>("/objects/preview", {
+    objectMetadata: (bucket: string, key: string, providerId?: string) =>
+      request<ObjectMetadata>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/metadata` : "/objects/metadata", {
         query: { bucket, key },
       }),
-    objectMetadata: (bucket: string, key: string) =>
-      request<ObjectMetadata>("/objects/metadata", {
+    deleteObject: (bucket: string, key: string, providerId?: string) =>
+      request<{ bucket: string; key: string; deleted: boolean }>(
+        providerId ? `/providers/${encodeURIComponent(providerId)}/objects` : "/objects",
+        {
+        method: "DELETE",
         query: { bucket, key },
+        },
+      ),
+    deletePrefix: (bucket: string, prefix: string, providerId?: string) =>
+      request<DeletePrefixResponse>(providerId ? `/providers/${encodeURIComponent(providerId)}/prefixes` : "/prefixes", {
+        method: "DELETE",
+        query: { bucket, prefix },
       }),
+    uploadObject: (bucket: string, prefix: string, file: File, providerId?: string) => {
+      const body = new FormData();
+      body.append("file", file);
+      return request<ObjectMetadata>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/upload` : "/objects/upload", {
+        method: "POST",
+        query: { bucket, prefix },
+        body,
+      });
+    },
+    renameObject: (
+      payload: { bucket: string; source_key: string; target_key: string; overwrite: boolean },
+      providerId?: string,
+    ) =>
+      request<ObjectMetadata>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/rename` : "/objects/rename", {
+        method: "POST",
+        body: payload,
+      }),
+    renamePrefix: (
+      payload: { bucket: string; source_prefix: string; target_prefix: string; overwrite: boolean },
+      providerId?: string,
+    ) =>
+      request<OperationSummary>(providerId ? `/providers/${encodeURIComponent(providerId)}/prefixes/rename` : "/prefixes/rename", {
+        method: "POST",
+        body: payload,
+      }),
+    moveObjects: (payload: {
+      bucket: string;
+      items: Array<{ type: "object" | "prefix"; key?: string; prefix?: string }>;
+      target_prefix: string;
+      overwrite: boolean;
+    }, providerId?: string) =>
+      request<OperationSummary>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/move` : "/objects/move", {
+        method: "POST",
+        body: payload,
+      }),
+    mergePrefixes: (payload: {
+      bucket: string;
+      source_prefix: string;
+      target_prefix: string;
+      conflict_strategy: "fail" | "skip" | "overwrite";
+    }, providerId?: string) =>
+      request<OperationSummary>(providerId ? `/providers/${encodeURIComponent(providerId)}/prefixes/merge` : "/prefixes/merge", {
+        method: "POST",
+        body: payload,
+      }),
+    operationStatus: (operationId: string) => request<OperationStatus>(`/operations/${operationId}`),
   };
 }

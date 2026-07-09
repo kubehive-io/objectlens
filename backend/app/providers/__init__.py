@@ -1,6 +1,8 @@
 from .base import ObjectStorageProvider
 from .ceph import CephObjectStorageProvider
-from .factory import get_provider
+from .factory import get_provider, get_provider_by_id
+from .garage import GarageObjectStorageProvider
+from .registry import ProviderRegistry, get_provider_registry
 from .types import (
     BucketDetails,
     BucketInfo,
@@ -11,6 +13,8 @@ from .types import (
     ObjectPreview,
     ObjectPreviewType,
     ProviderConfig,
+    ProviderConnection,
+    ProviderConnectionPublic,
 )
 
 __all__ = [
@@ -18,6 +22,7 @@ __all__ = [
     "BucketInfo",
     "BucketPrefix",
     "CephObjectStorageProvider",
+    "GarageObjectStorageProvider",
     "ObjectInfo",
     "ObjectListResult",
     "ObjectMetadata",
@@ -25,5 +30,10 @@ __all__ = [
     "ObjectPreviewType",
     "ObjectStorageProvider",
     "ProviderConfig",
+    "ProviderConnection",
+    "ProviderConnectionPublic",
+    "ProviderRegistry",
     "get_provider",
+    "get_provider_by_id",
+    "get_provider_registry",
 ]

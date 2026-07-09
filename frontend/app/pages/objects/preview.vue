@@ -7,6 +7,7 @@ const api = useObjectLensApi();
 
 const bucket = computed(() => String(route.query.bucket || ""));
 const key = computed(() => String(route.query.key || ""));
+const providerId = computed(() => String(route.query.provider || ""));
 const preview = ref<ObjectPreview | null>(null);
 const loading = ref(true);
 const error = ref("");
@@ -20,7 +21,7 @@ onMounted(async () => {
   loading.value = true;
   error.value = "";
   try {
-    preview.value = await api.objectPreview(bucket.value, key.value);
+    preview.value = await api.objectPreview(bucket.value, key.value, providerId.value || undefined);
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Preview failed.";
   } finally {
@@ -33,9 +34,14 @@ onMounted(async () => {
   <main class="app-shell">
     <section class="topbar">
       <div>
-        <NuxtLink class="back-link" :to="`/buckets/${encodeURIComponent(bucket)}`">Bucket details</NuxtLink>
+        <NuxtLink
+          class="back-link"
+          :to="`/buckets/${encodeURIComponent(bucket)}${providerId ? `?provider=${encodeURIComponent(providerId)}` : ''}`"
+        >
+          Bucket details
+        </NuxtLink>
         <h1>Object preview</h1>
-        <p>{{ key }}</p>
+        <p>{{ providerId ? `${providerId} / ` : "" }}{{ key }}</p>
       </div>
     </section>
 

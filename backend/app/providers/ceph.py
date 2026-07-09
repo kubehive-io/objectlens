@@ -12,11 +12,14 @@ from .types import (
     BucketDetails,
     BucketInfo,
     BucketPrefix,
+    DeleteObjectResult,
+    DeletePrefixResult,
     ObjectInfo,
     ObjectListResult,
     ObjectMetadata,
     ObjectPreview,
     ObjectPreviewType,
+    ProviderConnection,
 )
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -26,13 +29,39 @@ class CephObjectStorageProvider(ObjectStorageProvider):
     provider = "ceph"
     display_name = "Ceph RGW"
 
-    def __init__(self, settings: Settings) -> None:
-        self.endpoint_url = settings.ceph_s3_endpoint_url
-        self.default_bucket = settings.ceph_s3_default_bucket or None
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        connection: ProviderConnection | None = None,
+    ) -> None:
+        self.connection_id = connection.id if connection else self.provider
+        self.connection_name = connection.name if connection else self.display_name
+        self.endpoint_url = connection.endpoint_url if connection else settings.ceph_s3_endpoint_url
+        self.default_bucket = (
+            connection.default_bucket if connection else settings.ceph_s3_default_bucket or None
+        )
         self._settings = settings
+        self._connection = connection
         self._client = self._create_client()
 
     def _create_client(self):
+        if self._connection:
+            kwargs: dict[str, Any] = {
+                "service_name": "s3",
+                "region_name": self._connection.region,
+                "verify": self._connection.verify_ssl,
+                "config": Config(
+                    signature_version="s3v4",
+                    s3={"addressing_style": "path"},
+                ),
+            }
+            if self._connection.endpoint_url:
+                kwargs["endpoint_url"] = self._connection.endpoint_url
+            if self._connection.access_key_id and self._connection.secret_access_key:
+                kwargs["aws_access_key_id"] = self._connection.access_key_id
+                kwargs["aws_secret_access_key"] = self._connection.secret_access_key
+            return boto3.client(**kwargs)
+
         kwargs: dict[str, Any] = {
             "service_name": "s3",
             "region_name": self._settings.ceph_s3_region,
@@ -214,6 +243,72 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             download_url=download_url,
             reason="Object type is not supported for inline preview.",
         )
+
+    def delete_object(self, bucket: str, key: str) -> DeleteObjectResult:
+        self._client.delete_object(Bucket=bucket, Key=key)
+        return DeleteObjectResult(bucket=bucket, key=key)
+
+    def delete_prefix(self, bucket: str, prefix: str) -> DeletePrefixResult:
+        deleted_count = 0
+        errors: list[str] = []
+        continuation_token = None
+
+        while True:
+            kwargs: dict[str, Any] = {"Bucket": bucket, "Prefix": prefix, "MaxKeys": 1000}
+            if continuation_token:
+                kwargs["ContinuationToken"] = continuation_token
+
+            response = self._client.list_objects_v2(**kwargs)
+            keys = [{"Key": item["Key"]} for item in response.get("Contents", [])]
+            if keys:
+                delete_response = self._client.delete_objects(
+                    Bucket=bucket,
+                    Delete={"Objects": keys, "Quiet": True},
+                )
+                batch_errors = delete_response.get("Errors", [])
+                deleted_count += len(keys) - len(batch_errors)
+                errors.extend(
+                    f"{error.get('Key')}: {error.get('Code')} {error.get('Message')}"
+                    for error in batch_errors
+                )
+
+            continuation_token = response.get("NextContinuationToken")
+            if not continuation_token:
+                break
+
+        return DeletePrefixResult(
+            bucket=bucket,
+            prefix=prefix,
+            deleted_count=deleted_count,
+            errors=errors,
+        )
+
+    def upload_object(
+        self,
+        bucket: str,
+        key: str,
+        file_obj,
+        content_type: str | None = None,
+    ) -> ObjectInfo:
+        extra_args = {"ContentType": content_type} if content_type else None
+        if extra_args:
+            self._client.upload_fileobj(file_obj, bucket, key, ExtraArgs=extra_args)
+        else:
+            self._client.upload_fileobj(file_obj, bucket, key)
+        return self.get_object_metadata(bucket=bucket, key=key)
+
+    def copy_object(
+        self,
+        bucket: str,
+        source_key: str,
+        target_key: str,
+    ) -> ObjectInfo:
+        self._client.copy_object(
+            Bucket=bucket,
+            Key=target_key,
+            CopySource={"Bucket": bucket, "Key": source_key},
+        )
+        return self.get_object_metadata(bucket=bucket, key=target_key)
 
     def _read_preview_bytes(self, bucket: str, key: str, max_bytes: int) -> bytes:
         response = self._client.get_object(Bucket=bucket, Key=key, Range=f"bytes=0-{max_bytes - 1}")

@@ -54,6 +54,20 @@ services:
       mc cp /tmp/example.json local/objectlens-demo/examples/example.json;
       "
 
+  garage:
+    image: dxflrs/garage:v1.0.0
+    profiles:
+      - garage
+    command: /garage server
+    volumes:
+      - ./docker/garage/garage.toml:/etc/garage.toml:ro
+      - garage-data:/var/lib/garage
+    ports:
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
+
 volumes:
   objectlens-data:
   minio-data:
+  garage-data:

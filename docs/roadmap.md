@@ -5,6 +5,7 @@
 - Nuxt frontend
 - FastAPI backend
 - Ceph provider
+- Garage provider
 - SQLite metadata index
 - Manual bucket scan
 - Presigned downloads
@@ -38,6 +39,12 @@
 - Recursive prefix indexing jobs
 - Background index refresh
 - Object type icons and richer previews
+- Multi-file upload
+- Resumable upload
+- Upload progress
+- Object versioning support
+- Soft-delete / recycle bin
+- Audit logs for delete/upload
 
 ## Phase 4: Homelab Platform Product
 

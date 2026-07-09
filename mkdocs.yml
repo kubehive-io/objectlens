@@ -22,7 +22,9 @@ nav:
   - Getting Started: getting-started.md
   - Architecture: architecture.md
   - Provider Model: provider-model.md
+  - Multi-Provider: multi-provider.md
   - Ceph Provider: ceph-provider.md
+  - Garage Provider: garage-provider.md
   - Roadmap: roadmap.md
   - Development: development.md
   - Decisions:

@@ -1,6 +1,15 @@
 from abc import ABC, abstractmethod
 
-from .types import BucketDetails, BucketInfo, ObjectListResult, ObjectMetadata, ObjectPreview
+from .types import (
+    BucketDetails,
+    BucketInfo,
+    DeleteObjectResult,
+    DeletePrefixResult,
+    ObjectInfo,
+    ObjectListResult,
+    ObjectMetadata,
+    ObjectPreview,
+)
 
 
 class ObjectStorageProvider(ABC):
@@ -52,4 +61,31 @@ class ObjectStorageProvider(ABC):
         key: str,
         max_bytes: int = 1024 * 1024,
     ) -> ObjectPreview:
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_object(self, bucket: str, key: str) -> DeleteObjectResult:
+        raise NotImplementedError
+
+    @abstractmethod
+    def delete_prefix(self, bucket: str, prefix: str) -> DeletePrefixResult:
+        raise NotImplementedError
+
+    @abstractmethod
+    def upload_object(
+        self,
+        bucket: str,
+        key: str,
+        file_obj,
+        content_type: str | None = None,
+    ) -> ObjectInfo:
+        raise NotImplementedError
+
+    @abstractmethod
+    def copy_object(
+        self,
+        bucket: str,
+        source_key: str,
+        target_key: str,
+    ) -> ObjectInfo:
         raise NotImplementedError

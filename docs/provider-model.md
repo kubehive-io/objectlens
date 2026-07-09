@@ -4,7 +4,7 @@ ObjectLens uses a provider abstraction so the API and frontend can stay stable w
 
 ## Why It Exists
 
-Ceph RGW is the first target, but ObjectLens should not be hardcoded to Ceph or AWS naming. A provider boundary keeps object storage access isolated behind a small interface.
+Ceph RGW was the first target, and Garage is supported for local and self-hosted development. ObjectLens should not be hardcoded to Ceph, Garage, or AWS naming. A provider boundary keeps object storage access isolated behind a small interface.
 
 ## Provider Interface
 
@@ -22,8 +22,9 @@ class ObjectStorageProvider:
         self,
         bucket: str,
         prefix: str | None = None,
+        delimiter: str | None = "/",
         continuation_token: str | None = None,
-        limit: int = 1000,
+        limit: int = 50,
     ) -> ObjectListResult:
         ...
 
@@ -49,6 +50,15 @@ class ObjectStorageProvider:
         max_bytes: int = 1024 * 1024,
     ) -> ObjectPreview:
         ...
+
+    def upload_object(
+        self,
+        bucket: str,
+        key: str,
+        file_obj,
+        content_type: str | None = None,
+    ) -> ObjectInfo:
+        ...
 ```
 
 Shared provider types include:
@@ -61,6 +71,11 @@ Shared provider types include:
 - `ObjectPreviewType`
 - `ObjectListResult`
 - `ProviderConfig`
+
+## Current Providers
+
+- `ceph`: Ceph RGW through the S3-compatible API.
+- `garage`: Garage through the S3-compatible API.
 
 ## Adding Providers
 
@@ -76,6 +91,7 @@ To add a provider:
 
 - AWS S3
 - MinIO
+- Garage clusters beyond local development
 - Azure Blob
 - Google Cloud Storage
 - Local filesystem

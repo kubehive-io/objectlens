@@ -1,21 +1,14 @@
 <script setup lang="ts">
-import type { Bucket, ProviderInfo } from "../composables/useObjectLensApi";
+import type { ProviderConnection } from "../composables/useObjectLensApi";
 import { useObjectLensApi } from "../composables/useObjectLensApi";
 
 const api = useObjectLensApi();
 
-const buckets = ref<Bucket[]>([]);
-const provider = ref<ProviderInfo | null>(null);
+const providers = ref<ProviderConnection[]>([]);
+const bucketCounts = ref<Record<string, number>>({});
 const backendHealthy = ref(false);
 const loading = ref(true);
 const error = ref("");
-
-function formatDate(value?: string | null) {
-  if (!value) return "Creation date unavailable";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(value),
-  );
-}
 
 onMounted(async () => {
   loading.value = true;
@@ -23,8 +16,14 @@ onMounted(async () => {
   try {
     const health = await api.health();
     backendHealthy.value = health.status === "ok";
-    provider.value = await api.provider();
-    buckets.value = (await api.listBuckets()).buckets;
+    providers.value = await api.listProviders();
+    for (const provider of providers.value) {
+      try {
+        bucketCounts.value[provider.id] = (await api.listProviderBuckets(provider.id)).buckets.length;
+      } catch {
+        bucketCounts.value[provider.id] = 0;
+      }
+    }
   } catch (err) {
     backendHealthy.value = false;
     error.value =
@@ -48,21 +47,6 @@ onMounted(async () => {
 
     <section class="status-grid">
       <article class="status-card">
-        <span class="label">Provider</span>
-        <strong>{{ provider?.display_name || "Ceph RGW" }}</strong>
-        <dl>
-          <div>
-            <dt>Endpoint URL</dt>
-            <dd>{{ provider?.endpoint_url || "Not configured" }}</dd>
-          </div>
-          <div>
-            <dt>Default bucket</dt>
-            <dd>{{ provider?.default_bucket || "No default bucket" }}</dd>
-          </div>
-        </dl>
-      </article>
-
-      <article class="status-card">
         <span class="label">Backend health</span>
         <strong :class="backendHealthy ? 'healthy' : 'unhealthy'">
           {{ backendHealthy ? "Online" : "Unavailable" }}
@@ -85,25 +69,26 @@ onMounted(async () => {
     <section v-else class="section-block">
       <div class="section-heading">
         <div>
-          <h2>Visible buckets</h2>
-          <p>Buckets are returned from the current Ceph RGW credentials.</p>
+          <h2>Provider connections</h2>
+          <p>Select the object-storage connection you want to browse.</p>
         </div>
       </div>
 
-      <div v-if="loading" class="empty-panel">Loading visible buckets...</div>
-      <div v-else-if="buckets.length === 0" class="empty-panel">
-        No buckets are visible to the configured provider credentials.
+      <div v-if="loading" class="empty-panel">Loading provider connections...</div>
+      <div v-else-if="providers.length === 0" class="empty-panel">
+        No provider connections are configured.
       </div>
       <div v-else class="bucket-grid">
         <NuxtLink
-          v-for="bucket in buckets"
-          :key="bucket.name"
+          v-for="provider in providers"
+          :key="provider.id"
           class="bucket-card"
-          :to="`/buckets/${encodeURIComponent(bucket.name)}`"
+          :to="`/providers/${encodeURIComponent(provider.id)}`"
         >
-          <span class="label">Bucket</span>
-          <strong>{{ bucket.name }}</strong>
-          <p>{{ formatDate(bucket.creation_date) }}</p>
+          <span class="label">{{ provider.type }}</span>
+          <strong>{{ provider.name }}</strong>
+          <p>{{ provider.endpoint_url || "AWS/default endpoint" }}</p>
+          <p>{{ provider.region }} · {{ bucketCounts[provider.id] ?? 0 }} visible buckets</p>
         </NuxtLink>
       </div>
     </section>
