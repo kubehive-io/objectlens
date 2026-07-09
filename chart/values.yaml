@@ -1,0 +1,67 @@
+# Default values for objectlens.
+
+# Override the name or fullname of the release.
+nameOverride: ""
+fullnameOverride: ""
+
+# Backend service and deployment configuration
+backend:
+  replicaCount: 1
+  image:
+    repository: objectlens-backend
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 8000
+  env:
+    # Database connection string.
+    databaseUrl: "sqlite:////data/objectlens.db"
+    # Active storage provider. Supported: ceph, aws, garage
+    provider: "ceph"
+    # Allowed CORS origins, comma-separated.
+    corsOrigins: "http://localhost:3000"
+  persistence:
+    # Use emptyDir for temporary local storage, or configure a PVC.
+    type: emptyDir # Options: emptyDir, pvc
+    # PVC configuration if type is pvc
+    pvc:
+      storageClass: ""
+      size: 1Gi
+
+# Frontend service and deployment configuration
+frontend:
+  replicaCount: 1
+  image:
+    repository: objectlens-frontend
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  service:
+    port: 80
+  env:
+    # Override the backend API URL. Defaults to the backend service.
+    apiBaseUrl: ""
+
+# Ingress resource configuration
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: objectlens.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Ceph S3 configuration secret
+secret:
+  # Whether to create the configuration secret.
+  create: true
+  # Name of the secret. Defaults to 'objectlens-ceph' if empty.
+  name: "objectlens-ceph"
+  cephS3EndpointUrl: "https://rgw.example.internal"
+  cephS3Region: "us-east-1"
+  cephS3AccessKeyId: "replace-me"
+  cephS3SecretAccessKey: "replace-me"
+  cephS3DefaultBucket: "replace-me"
+  cephS3VerifySsl: "true"

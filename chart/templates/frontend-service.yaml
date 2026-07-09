@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "objectlens.fullname" . }}-frontend
+  labels:
+    {{- include "objectlens.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.frontend.service.port }}
+      targetPort: 3000
+  selector:
+    {{- include "objectlens.selectorLabels" . | nindent 4 }}
+    component: frontend

@@ -1,0 +1,18 @@
+{{- if eq .Values.backend.persistence.type "pvc" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "objectlens.fullname" . }}-backend-pvc
+  labels:
+    {{- include "objectlens.labels" . | nindent 4 }}
+    component: backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.backend.persistence.pvc.size }}
+  {{- if .Values.backend.persistence.pvc.storageClass }}
+  storageClassName: {{ .Values.backend.persistence.pvc.storageClass | quote }}
+  {{- end }}
+{{- end }}

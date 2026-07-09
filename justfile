@@ -41,7 +41,7 @@ docker-down:
     docker compose down
 
 k8s-apply:
-    kubectl apply -f deploy/kubernetes/
+    helm upgrade --install objectlens chart/ --namespace objectlens --create-namespace
 
 k8s-delete:
-    kubectl delete -f deploy/kubernetes/
+    helm uninstall objectlens --namespace objectlens

@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "objectlens.fullname" . }}-backend
+  labels:
+    {{- include "objectlens.labels" . | nindent 4 }}
+    component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "objectlens.selectorLabels" . | nindent 6 }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "objectlens.selectorLabels" . | nindent 8 }}
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: OBJECTLENS_DATABASE_URL
+              value: {{ .Values.backend.env.databaseUrl | quote }}
+            - name: OBJECTLENS_PROVIDER
+              value: {{ .Values.backend.env.provider | quote }}
+            - name: OBJECTLENS_CORS_ORIGINS
+              value: {{ .Values.backend.env.corsOrigins | quote }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secret.create | ternary (default (printf "%s-ceph" (include "objectlens.fullname" .)) .Values.secret.name) (default "objectlens-ceph" .Values.secret.name) }}
+          volumeMounts:
+            - name: metadata
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: metadata
+          {{- if eq .Values.backend.persistence.type "pvc" }}
+          persistentVolumeClaim:
+            claimName: {{ include "objectlens.fullname" . }}-backend-pvc
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

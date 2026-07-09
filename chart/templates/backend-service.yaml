@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "objectlens.fullname" . }}-backend
+  labels:
+    {{- include "objectlens.labels" . | nindent 4 }}
+    component: backend
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: {{ .Values.backend.service.port }}
+      targetPort: 8000
+  selector:
+    {{- include "objectlens.selectorLabels" . | nindent 4 }}
+    component: backend
