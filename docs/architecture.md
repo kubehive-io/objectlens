@@ -112,3 +112,30 @@ flowchart TD
   Objects --> UI
   UI --> User
 ```
+
+## Lazy Prefix Indexing
+
+ObjectLens does not need to scan the full bucket before browsing. When a bucket or prefix is opened, ObjectLens asks the provider for only the current prefix page with `Prefix`, `Delimiter=/`, and the requested page size. Direct objects are stored in the metadata index, and discovered common prefixes are stored as folder-like browser entries. This keeps large buckets responsive while still allowing manual deeper scans when needed.
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI as Nuxt Bucket Browser
+  participant API as FastAPI Backend
+  participant Provider as Provider Interface
+  participant Ceph as Ceph RGW
+  participant DB as Metadata Index
+
+  User->>UI: Open bucket or prefix
+  UI->>API: GET /buckets/{bucket}/objects?prefix=logs/&delimiter=/&limit=50
+  API->>DB: Check indexed metadata for prefix
+  alt Prefix not indexed
+    API->>Provider: list_objects(bucket, prefix, delimiter=/, limit=50)
+    Provider->>Ceph: ListObjectsV2 Prefix + Delimiter
+    Ceph-->>Provider: CommonPrefixes + Objects
+    Provider-->>API: Prefixes + objects
+    API->>DB: Store page metadata
+  end
+  API-->>UI: Unified browser items
+  UI-->>User: Show folders and files together
+```

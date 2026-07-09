@@ -4,6 +4,7 @@ from .factory import get_provider
 from .types import (
     BucketDetails,
     BucketInfo,
+    BucketPrefix,
     ObjectInfo,
     ObjectListResult,
     ObjectMetadata,
@@ -15,6 +16,7 @@ from .types import (
 __all__ = [
     "BucketDetails",
     "BucketInfo",
+    "BucketPrefix",
     "CephObjectStorageProvider",
     "ObjectInfo",
     "ObjectListResult",

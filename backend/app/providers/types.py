@@ -10,6 +10,12 @@ class BucketInfo(BaseModel):
     creation_date: datetime | None = None
 
 
+class BucketPrefix(BaseModel):
+    name: str
+    prefix: str
+    object_count: int = 0
+
+
 class BucketDetails(BucketInfo):
     provider: str
     indexed_object_count: int = 0
@@ -56,6 +62,7 @@ class ObjectPreview(BaseModel):
 
 class ObjectListResult(BaseModel):
     objects: list[ObjectInfo]
+    prefixes: list[BucketPrefix] = Field(default_factory=list)
     next_continuation_token: str | None = None
     is_truncated: bool = False
 

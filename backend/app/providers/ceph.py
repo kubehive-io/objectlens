@@ -11,6 +11,7 @@ from .base import ObjectStorageProvider
 from .types import (
     BucketDetails,
     BucketInfo,
+    BucketPrefix,
     ObjectInfo,
     ObjectListResult,
     ObjectMetadata,
@@ -68,8 +69,9 @@ class CephObjectStorageProvider(ObjectStorageProvider):
         self,
         bucket: str,
         prefix: str | None = None,
+        delimiter: str | None = "/",
         continuation_token: str | None = None,
-        limit: int = 1000,
+        limit: int = 50,
     ) -> ObjectListResult:
         kwargs: dict[str, Any] = {
             "Bucket": bucket,
@@ -77,6 +79,8 @@ class CephObjectStorageProvider(ObjectStorageProvider):
         }
         if prefix:
             kwargs["Prefix"] = prefix
+        if delimiter:
+            kwargs["Delimiter"] = delimiter
         if continuation_token:
             kwargs["ContinuationToken"] = continuation_token
 
@@ -91,8 +95,16 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             )
             for obj in response.get("Contents", [])
         ]
+        prefixes = [
+            BucketPrefix(
+                name=common_prefix["Prefix"][len(prefix or "") :],
+                prefix=common_prefix["Prefix"],
+            )
+            for common_prefix in response.get("CommonPrefixes", [])
+        ]
         return ObjectListResult(
             objects=objects,
+            prefixes=prefixes,
             next_continuation_token=response.get("NextContinuationToken"),
             is_truncated=response.get("IsTruncated", False),
         )

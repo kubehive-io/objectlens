@@ -60,6 +60,18 @@ export type BucketPrefix = {
   object_count: number;
 };
 
+export type BucketBrowserItem = {
+  type: "prefix" | "object";
+  name: string;
+  icon: "folder" | "json" | "csv" | "parquet" | "image" | "file";
+  prefix?: string | null;
+  key?: string | null;
+  size?: number | null;
+  content_type?: string | null;
+  storage_class?: string | null;
+  last_modified?: string | null;
+};
+
 export type Pagination = {
   limit: number;
   offset: number;
@@ -77,8 +89,7 @@ export type BucketObjectListing = {
   limit: number;
   offset: number;
   total_objects: number;
-  objects: ObjectMetadata[];
-  prefixes: BucketPrefix[];
+  items: BucketBrowserItem[];
   pagination: Pagination;
 };
 

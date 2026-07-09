@@ -22,8 +22,9 @@ class ObjectStorageProvider(ABC):
         self,
         bucket: str,
         prefix: str | None = None,
+        delimiter: str | None = "/",
         continuation_token: str | None = None,
-        limit: int = 1000,
+        limit: int = 50,
     ) -> ObjectListResult:
         raise NotImplementedError
 

@@ -20,6 +20,7 @@ def scan_bucket(bucket: str = Query(..., min_length=1)) -> ScanResponse:
         while True:
             result = provider.list_objects(
                 bucket=bucket,
+                delimiter=None,
                 continuation_token=continuation_token,
                 limit=1000,
             )

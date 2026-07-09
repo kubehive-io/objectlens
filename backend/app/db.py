@@ -43,6 +43,27 @@ object_metadata = Table(
     Column("indexed_at", DateTime(timezone=True), nullable=False),
 )
 
+prefix_index_state = Table(
+    "prefix_index_state",
+    metadata,
+    Column("provider", String, primary_key=True),
+    Column("bucket", String, primary_key=True),
+    Column("prefix", String, primary_key=True),
+    Column("indexed_at", DateTime(timezone=True), nullable=False),
+)
+
+object_prefixes = Table(
+    "object_prefixes",
+    metadata,
+    Column("provider", String, primary_key=True),
+    Column("bucket", String, primary_key=True),
+    Column("parent_prefix", String, primary_key=True),
+    Column("prefix", String, primary_key=True),
+    Column("name", String, nullable=False),
+    Column("object_count", Integer, nullable=False, default=0),
+    Column("indexed_at", DateTime(timezone=True), nullable=False),
+)
+
 Index("ix_object_metadata_provider_bucket", object_metadata.c.provider, object_metadata.c.bucket)
 Index(
     "ix_object_metadata_provider_bucket_key",
@@ -132,6 +153,82 @@ def upsert_objects(provider: str, bucket: str, objects: list[dict[str, Any]]) ->
     with get_engine().begin() as conn:
         conn.execute(update_stmt)
     return len(rows)
+
+
+def is_prefix_indexed(provider: str, bucket: str, prefix: str) -> bool:
+    statement = (
+        select(prefix_index_state.c.indexed_at)
+        .where(prefix_index_state.c.provider == provider)
+        .where(prefix_index_state.c.bucket == bucket)
+        .where(prefix_index_state.c.prefix == prefix)
+        .limit(1)
+    )
+    with get_engine().connect() as conn:
+        return conn.execute(statement).first() is not None
+
+
+def mark_prefix_indexed(provider: str, bucket: str, prefix: str) -> None:
+    insert_stmt = sqlite_insert(prefix_index_state).values(
+        provider=provider,
+        bucket=bucket,
+        prefix=prefix,
+        indexed_at=datetime.now(UTC),
+    )
+    update_stmt = insert_stmt.on_conflict_do_update(
+        index_elements=["provider", "bucket", "prefix"],
+        set_={"indexed_at": insert_stmt.excluded.indexed_at},
+    )
+    with get_engine().begin() as conn:
+        conn.execute(update_stmt)
+
+
+def upsert_prefixes(
+    provider: str,
+    bucket: str,
+    parent_prefix: str,
+    prefixes: list[dict[str, Any]],
+) -> int:
+    indexed_at = datetime.now(UTC)
+    rows = [
+        {
+            "provider": provider,
+            "bucket": bucket,
+            "parent_prefix": parent_prefix,
+            "prefix": item["prefix"],
+            "name": item["name"],
+            "object_count": item.get("object_count") or 0,
+            "indexed_at": indexed_at,
+        }
+        for item in prefixes
+    ]
+    if not rows:
+        return 0
+
+    insert_stmt = sqlite_insert(object_prefixes).values(rows)
+    update_stmt = insert_stmt.on_conflict_do_update(
+        index_elements=["provider", "bucket", "parent_prefix", "prefix"],
+        set_={
+            "name": insert_stmt.excluded.name,
+            "object_count": insert_stmt.excluded.object_count,
+            "indexed_at": insert_stmt.excluded.indexed_at,
+        },
+    )
+    with get_engine().begin() as conn:
+        conn.execute(update_stmt)
+    return len(rows)
+
+
+def indexed_common_prefixes(provider: str, bucket: str, parent_prefix: str) -> list[dict[str, Any]]:
+    statement = (
+        select(object_prefixes)
+        .where(object_prefixes.c.provider == provider)
+        .where(object_prefixes.c.bucket == bucket)
+        .where(object_prefixes.c.parent_prefix == parent_prefix)
+        .order_by(object_prefixes.c.prefix.asc())
+    )
+    with get_engine().connect() as conn:
+        rows = conn.execute(statement).mappings().all()
+    return [dict(row) for row in rows]
 
 
 def search_objects(

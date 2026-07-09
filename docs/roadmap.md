@@ -31,9 +31,13 @@
 - Object preview
 - Bulk actions
 - Cursor-based pagination
+- Better continuation-token based pagination
 - Virtualized tables
 - Server-side sorting
 - Prefix-level statistics
+- Recursive prefix indexing jobs
+- Background index refresh
+- Object type icons and richer previews
 
 ## Phase 4: Homelab Platform Product
 

@@ -60,6 +60,18 @@ class BucketPrefix(BaseModel):
     object_count: int
 
 
+class BucketBrowserItem(BaseModel):
+    type: str
+    name: str
+    icon: str
+    prefix: str | None = None
+    key: str | None = None
+    size: int | None = None
+    content_type: str | None = None
+    storage_class: str | None = None
+    last_modified: datetime | None = None
+
+
 class BucketObjectListing(BaseModel):
     bucket: str
     prefix: str
@@ -68,8 +80,7 @@ class BucketObjectListing(BaseModel):
     limit: int
     offset: int
     total_objects: int
-    objects: list[ObjectMetadata]
-    prefixes: list[BucketPrefix]
+    items: list[BucketBrowserItem]
     pagination: Pagination
 
 
