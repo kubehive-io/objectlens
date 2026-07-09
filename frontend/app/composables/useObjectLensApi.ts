@@ -5,11 +5,17 @@ export type Bucket = {
 
 export type BucketDetails = {
   provider: string;
+  provider_id?: string | null;
+  provider_name?: string | null;
   name: string;
+  bucket?: string | null;
   creation_date?: string | null;
   indexed_object_count: number;
   indexed_total_size: number;
   last_indexed_at?: string | null;
+  largest_objects?: ObjectMetadata[];
+  recent_objects?: ObjectMetadata[];
+  top_prefixes?: PrefixSummary[];
 };
 
 export type HealthResponse = {
@@ -33,9 +39,28 @@ export type ProviderConnection = {
   name: string;
   type: string;
   display_name: string;
+  description?: string | null;
   endpoint_url?: string | null;
   region: string;
   default_bucket?: string | null;
+  verify_ssl: boolean;
+  tags: string[];
+};
+
+export type ProviderStatus = {
+  provider_id: string;
+  status: string;
+  can_list_buckets: boolean;
+  visible_bucket_count: number;
+  message: string;
+};
+
+export type ProviderSettings = {
+  provider_id: string;
+  config_source: string;
+  secrets_loaded: boolean;
+  secret_fields: string[];
+  editable: boolean;
 };
 
 export type ObjectMetadata = {
@@ -66,6 +91,14 @@ export type BucketSummary = {
   largest_objects: ObjectMetadata[];
   recent_objects: ObjectMetadata[];
   top_prefixes: PrefixSummary[];
+};
+
+export type BucketSettings = {
+  bucket: string;
+  provider_id: string;
+  versioning: string;
+  lifecycle: string;
+  policy: string;
 };
 
 export type BucketPrefix = {
@@ -188,6 +221,10 @@ export function useObjectLensApi() {
     listProviders: () => request<ProviderConnection[]>("/providers"),
     providerConnection: (providerId: string) =>
       request<ProviderConnection>(`/providers/${encodeURIComponent(providerId)}`),
+    providerStatus: (providerId: string) =>
+      request<ProviderStatus>(`/providers/${encodeURIComponent(providerId)}/status`),
+    providerSettings: (providerId: string) =>
+      request<ProviderSettings>(`/providers/${encodeURIComponent(providerId)}/settings`),
     listBuckets: () => request<{ buckets: Bucket[] }>("/buckets"),
     listProviderBuckets: (providerId: string) =>
       request<{ buckets: Bucket[] }>(`/providers/${encodeURIComponent(providerId)}/buckets`),
@@ -200,6 +237,10 @@ export function useObjectLensApi() {
     providerBucketSummary: (providerId: string, bucket: string) =>
       request<BucketSummary>(
         `/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/summary`,
+      ),
+    providerBucketSettings: (providerId: string, bucket: string) =>
+      request<BucketSettings>(
+        `/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/settings`,
       ),
     listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),

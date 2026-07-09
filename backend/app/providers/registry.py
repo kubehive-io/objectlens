@@ -1,3 +1,5 @@
+import os
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -15,6 +17,7 @@ from .types import ProviderConnection, ProviderConnectionPublic
 class ProviderRegistry:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        self.config_source = settings.providers_config_file
         self._connections = self._load_connections()
         self._instances: dict[str, ObjectStorageProvider] = {}
         seen: set[str] = set()
@@ -30,12 +33,34 @@ class ProviderRegistry:
             candidates.append(Path("..") / configured_path)
         config_path = next((path for path in candidates if path.exists()), configured_path)
         if config_path.exists():
-            payload = yaml.safe_load(config_path.read_text()) or {}
-            return [
-                ProviderConnection.model_validate(item)
-                for item in payload.get("providers", [])
+            self.config_source = str(config_path)
+            payload = self._expand_env_values(yaml.safe_load(config_path.read_text()) or {})
+            connections = [
+                ProviderConnection.model_validate(item) for item in payload.get("providers", [])
             ]
+            if not connections:
+                raise ValueError(f"No providers configured in {config_path}")
+            return connections
         return [self._legacy_connection()]
+
+    def _expand_env_values(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return {key: self._expand_env_values(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._expand_env_values(item) for item in value]
+        if not isinstance(value, str):
+            return value
+
+        def replace(match: re.Match[str]) -> str:
+            env_name = match.group(1)
+            if env_name not in os.environ:
+                raise ValueError(
+                    f"Missing environment variable {env_name} referenced in "
+                    f"{self.config_source}"
+                )
+            return os.environ[env_name]
+
+        return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", replace, value)
 
     def _legacy_connection(self) -> ProviderConnection:
         provider_type = self._settings.objectlens_provider
@@ -50,6 +75,7 @@ class ProviderRegistry:
                 secret_access_key=self._settings.garage_s3_secret_access_key,
                 default_bucket=self._settings.garage_s3_default_bucket,
                 verify_ssl=self._settings.garage_s3_verify_ssl,
+                tags=["garage"],
             )
         return ProviderConnection(
             id="ceph",
@@ -61,6 +87,7 @@ class ProviderRegistry:
             secret_access_key=self._settings.ceph_s3_secret_access_key,
             default_bucket=self._settings.ceph_s3_default_bucket,
             verify_ssl=self._settings.ceph_s3_verify_ssl,
+            tags=["ceph"],
         )
 
     def list_connections(self) -> list[ProviderConnectionPublic]:
@@ -73,9 +100,12 @@ class ProviderRegistry:
             name=connection.name,
             type=connection.type,
             display_name=provider.display_name,
+            description=connection.description,
             endpoint_url=connection.endpoint_url,
             region=connection.region,
             default_bucket=connection.default_bucket,
+            verify_ssl=connection.verify_ssl,
+            tags=connection.tags,
         )
 
     def get_connection(self, provider_id: str) -> ProviderConnection:

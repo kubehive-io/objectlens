@@ -23,6 +23,8 @@ nav:
   - Architecture: architecture.md
   - Provider Model: provider-model.md
   - Multi-Provider: multi-provider.md
+  - Provider Settings: provider-settings.md
+  - Bucket Details: bucket-details.md
   - Ceph Provider: ceph-provider.md
   - Garage Provider: garage-provider.md
   - Roadmap: roadmap.md

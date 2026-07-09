@@ -20,11 +20,17 @@ class BucketListResponse(BaseModel):
 
 class BucketDetailsResponse(BaseModel):
     provider: str
+    provider_id: str | None = None
+    provider_name: str | None = None
     name: str
+    bucket: str | None = None
     creation_date: datetime | None = None
     indexed_object_count: int = 0
     indexed_total_size: int = 0
     last_indexed_at: datetime | None = None
+    recent_objects: list["ObjectMetadata"] = Field(default_factory=list)
+    largest_objects: list["ObjectMetadata"] = Field(default_factory=list)
+    top_prefixes: list["PrefixSummary"] = Field(default_factory=list)
 
 
 class ObjectMetadata(BaseModel):
@@ -99,6 +105,14 @@ class BucketSummaryResponse(BaseModel):
     largest_objects: list[ObjectMetadata]
     recent_objects: list[ObjectMetadata]
     top_prefixes: list[PrefixSummary]
+
+
+class BucketSettingsResponse(BaseModel):
+    bucket: str
+    provider_id: str
+    versioning: str = "unknown"
+    lifecycle: str = "unknown"
+    policy: str = "not exposed in PoC"
 
 
 class ScanResponse(BaseModel):
@@ -199,6 +213,22 @@ class ProviderResponse(BaseModel):
     endpoint_url: str | None = None
     region: str | None = None
     default_bucket: str | None = None
+
+
+class ProviderStatusResponse(BaseModel):
+    provider_id: str
+    status: str
+    can_list_buckets: bool
+    visible_bucket_count: int = 0
+    message: str
+
+
+class ProviderSettingsResponse(BaseModel):
+    provider_id: str
+    config_source: str
+    secrets_loaded: bool
+    secret_fields: list[str]
+    editable: bool = False
 
 
 class ObjectPreviewResponse(BaseModel):

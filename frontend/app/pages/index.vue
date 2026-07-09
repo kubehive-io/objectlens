@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type { ProviderConnection } from "../composables/useObjectLensApi";
+import type { ProviderConnection, ProviderStatus } from "../composables/useObjectLensApi";
 import { useObjectLensApi } from "../composables/useObjectLensApi";
 
 const api = useObjectLensApi();
 
 const providers = ref<ProviderConnection[]>([]);
 const bucketCounts = ref<Record<string, number>>({});
+const statuses = ref<Record<string, ProviderStatus>>({});
 const backendHealthy = ref(false);
 const loading = ref(true);
 const error = ref("");
@@ -19,7 +20,9 @@ onMounted(async () => {
     providers.value = await api.listProviders();
     for (const provider of providers.value) {
       try {
-        bucketCounts.value[provider.id] = (await api.listProviderBuckets(provider.id)).buckets.length;
+        const status = await api.providerStatus(provider.id);
+        statuses.value[provider.id] = status;
+        bucketCounts.value[provider.id] = status.visible_bucket_count;
       } catch {
         bucketCounts.value[provider.id] = 0;
       }
@@ -79,17 +82,35 @@ onMounted(async () => {
         No provider connections are configured.
       </div>
       <div v-else class="bucket-grid">
-        <NuxtLink
+        <article
           v-for="provider in providers"
           :key="provider.id"
           class="bucket-card"
-          :to="`/providers/${encodeURIComponent(provider.id)}`"
         >
-          <span class="label">{{ provider.type }}</span>
+          <div class="card-title-row">
+            <span class="label">{{ provider.type }}</span>
+            <span
+              class="status-dot"
+              :class="statuses[provider.id]?.status === 'healthy' ? 'healthy-dot' : 'unhealthy-dot'"
+            />
+          </div>
           <strong>{{ provider.name }}</strong>
-          <p>{{ provider.endpoint_url || "AWS/default endpoint" }}</p>
+          <p>{{ provider.description || "No description provided." }}</p>
+          <p>{{ provider.endpoint_url || provider.region }}</p>
           <p>{{ provider.region }} · {{ bucketCounts[provider.id] ?? 0 }} visible buckets</p>
-        </NuxtLink>
+          <div class="tag-row">
+            <span v-for="tag in provider.tags || []" :key="tag" class="tag-pill">{{ tag }}</span>
+          </div>
+          <div class="card-actions">
+            <NuxtLink class="text-button" :to="`/providers/${encodeURIComponent(provider.id)}`">Open</NuxtLink>
+            <NuxtLink class="text-button" :to="`/providers/${encodeURIComponent(provider.id)}/details`">
+              Details
+            </NuxtLink>
+            <NuxtLink class="text-button" :to="`/providers/${encodeURIComponent(provider.id)}/details#settings`">
+              Settings
+            </NuxtLink>
+          </div>
+        </article>
       </div>
     </section>
   </main>

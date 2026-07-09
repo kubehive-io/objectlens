@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { Bucket, ProviderConnection } from "../../../composables/useObjectLensApi";
+import type {
+  Bucket,
+  ProviderConnection,
+  ProviderStatus,
+} from "../../../composables/useObjectLensApi";
 import { useObjectLensApi } from "../../../composables/useObjectLensApi";
 
 const route = useRoute();
@@ -7,6 +11,7 @@ const api = useObjectLensApi();
 
 const providerId = computed(() => String(route.params.providerId || ""));
 const provider = ref<ProviderConnection | null>(null);
+const status = ref<ProviderStatus | null>(null);
 const buckets = ref<Bucket[]>([]);
 const loading = ref(true);
 const error = ref("");
@@ -21,6 +26,7 @@ function formatDate(value?: string | null) {
 onMounted(async () => {
   try {
     provider.value = await api.providerConnection(providerId.value);
+    status.value = await api.providerStatus(providerId.value);
     buckets.value = (await api.listProviderBuckets(providerId.value)).buckets;
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Failed to load provider.";
@@ -41,7 +47,15 @@ onMounted(async () => {
     <section class="topbar compact-topbar">
       <div>
         <h1>{{ provider?.name || providerId }}</h1>
-        <p>{{ provider?.display_name }} · {{ provider?.region }}</p>
+        <p>{{ provider?.description || `${provider?.display_name} · ${provider?.region}` }}</p>
+      </div>
+      <div class="inline-actions">
+        <NuxtLink class="text-button" :to="`/providers/${encodeURIComponent(providerId)}/details`">
+          Details
+        </NuxtLink>
+        <NuxtLink class="text-button" :to="`/providers/${encodeURIComponent(providerId)}/details#settings`">
+          Settings
+        </NuxtLink>
       </div>
     </section>
 
@@ -52,10 +66,20 @@ onMounted(async () => {
         <span class="label">Provider type</span>
         <strong>{{ provider?.type }}</strong>
         <p>{{ provider?.endpoint_url || "AWS/default endpoint" }}</p>
+        <div class="tag-row">
+          <span v-for="tag in provider?.tags || []" :key="tag" class="tag-pill">{{ tag }}</span>
+        </div>
+      </article>
+      <article class="status-card">
+        <span class="label">Status</span>
+        <strong :class="status?.status === 'healthy' ? 'healthy' : 'unhealthy'">
+          {{ status?.status || "unknown" }}
+        </strong>
+        <p>{{ status?.message || "Status not checked." }}</p>
       </article>
       <article class="status-card">
         <span class="label">Visible buckets</span>
-        <strong>{{ buckets.length }}</strong>
+        <strong>{{ status?.visible_bucket_count ?? buckets.length }}</strong>
         <p>Buckets returned by {{ provider?.name || "this provider" }} credentials.</p>
       </article>
     </section>

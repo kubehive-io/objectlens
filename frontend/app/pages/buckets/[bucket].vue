@@ -480,12 +480,24 @@ onMounted(() => {
     <section class="topbar compact-topbar">
       <div>
         <h1>{{ bucket }}</h1>
-        <p>Browsing automatically indexes the current prefix. Use deep scan to index more of the bucket.</p>
+        <p>
+          Provider: {{ provider?.name || provider?.display_name || providerId || "default" }}.
+          Browsing automatically indexes the current prefix.
+        </p>
       </div>
-      <button class="primary" :disabled="scanning" @click="scanBucket">
-        <span :class="{ spin: scanning }">↻</span>
-        {{ scanning ? "Scanning" : "Deep scan bucket" }}
-      </button>
+      <div class="inline-actions">
+        <NuxtLink
+          v-if="providerId"
+          class="text-button"
+          :to="`/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/details`"
+        >
+          Details
+        </NuxtLink>
+        <button class="primary" :disabled="scanning" @click="scanBucket">
+          <span :class="{ spin: scanning }">↻</span>
+          {{ scanning ? "Scanning" : "Deep scan bucket" }}
+        </button>
+      </div>
     </section>
 
     <div v-if="error" class="alert error">{{ error }}</div>

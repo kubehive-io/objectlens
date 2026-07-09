@@ -25,6 +25,7 @@ from ..models import (
     BucketDetailsResponse,
     BucketListResponse,
     BucketObjectListing,
+    BucketSettingsResponse,
     BucketSummaryResponse,
     ObjectMetadata,
     Pagination,
@@ -380,11 +381,33 @@ def provider_bucket_details(provider_id: str | None, bucket: str) -> BucketDetai
         raise _storage_error(f"Failed to read bucket details for {bucket}", exc) from exc
 
     stats = bucket_index_stats(_provider_key(provider), bucket)
+    provider_key = _provider_key(provider)
     return BucketDetailsResponse(
         provider=provider.provider,
+        provider_id=provider_key,
+        provider_name=getattr(provider, "connection_name", provider.display_name),
         name=details.name,
+        bucket=details.name,
         creation_date=details.creation_date,
         indexed_object_count=stats["object_count"],
         indexed_total_size=stats["total_size"],
         last_indexed_at=stats["last_indexed_at"],
+        largest_objects=[
+            ObjectMetadata.model_validate(row) for row in largest_objects(provider_key, bucket)
+        ],
+        recent_objects=[
+            ObjectMetadata.model_validate(row) for row in recent_objects(provider_key, bucket)
+        ],
+        top_prefixes=[
+            PrefixSummary.model_validate(row) for row in top_prefixes(provider_key, bucket)
+        ],
     )
+
+
+@router.get(
+    "/providers/{provider_id}/buckets/{bucket}/settings",
+    response_model=BucketSettingsResponse,
+)
+def provider_bucket_settings(provider_id: str, bucket: str) -> BucketSettingsResponse:
+    _provider_or_error(provider_id)
+    return BucketSettingsResponse(bucket=bucket, provider_id=provider_id)

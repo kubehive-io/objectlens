@@ -143,6 +143,52 @@ p {
   font-size: 22px;
 }
 
+.card-title-row,
+.card-actions,
+.tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-title-row {
+  justify-content: space-between;
+}
+
+.card-actions {
+  margin-top: 14px;
+}
+
+.tag-row {
+  margin-top: 10px;
+}
+
+.tag-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-subtle);
+  color: var(--muted-strong);
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.healthy-dot {
+  background: var(--success);
+}
+
+.unhealthy-dot {
+  background: var(--danger);
+}
+
 .prefix-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

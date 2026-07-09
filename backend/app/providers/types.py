@@ -95,12 +95,14 @@ class ProviderConnection(BaseModel):
     id: str
     name: str
     type: str
+    description: str | None = None
     endpoint_url: str | None = None
     region: str = "us-east-1"
     access_key_id: str | None = None
     secret_access_key: str | None = None
     verify_ssl: bool = True
     default_bucket: str | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class ProviderConnectionPublic(BaseModel):
@@ -108,6 +110,9 @@ class ProviderConnectionPublic(BaseModel):
     name: str
     type: str
     display_name: str
+    description: str | None = None
     endpoint_url: str | None = None
     region: str
     default_bucket: str | None = None
+    verify_ssl: bool
+    tags: list[str] = Field(default_factory=list)
