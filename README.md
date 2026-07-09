@@ -6,28 +6,28 @@ ObjectLens is documented with MkDocs Material.
 
 ## Features
 
-- Ceph RGW provider
-- Garage provider for local, air-gapped, and self-hosted environments
-- Visible bucket listing based on provider credentials
-- Bucket detail pages
-- Bucket details and indexed statistics
-- Paginated bucket browsing
-- AWS S3-style prefix/folder navigation
-- Scoped prefix search
-- Glob-style search patterns
-- Indexed search
-- JSON, CSV, Parquet, and image preview
-- Drag-and-drop upload
-- Dedicated upload review page
-- Single object delete
-- Recursive prefix delete
-- Multi-row selection
-- Object and prefix rename
-- Object and prefix move
-- Prefix merge with conflict protection
-- Operation progress summaries
-- Presigned downloads
-- Light, dark, and auto theme modes
+### Storage Providers
+- **Ceph RGW & AWS S3**: High-performance object storage integration.
+- **Garage**: Simple, lightweight provider optimized for local, air-gapped, or self-hosted environments.
+- **Dynamic Discovery**: Automatic discovery and listing of buckets based on active credentials.
+
+### Navigation & Search
+- **S3-Style Pathing**: Native folder/prefix browsing.
+- **Search Capabilities**: Supports scoped prefix searches, glob-style matching, and fast indexed search.
+- **Detailed Insights**: Paginated bucket browsing complete with indexed storage statistics.
+
+### Previews & Actions
+- **Rich File Previews**: Built-in viewing for CSV, JSON, Parquet, and image files.
+- **Direct Operations**: Rename, move, delete single objects, or recursively clean up entire prefixes.
+- **Safe Merges**: Merge prefixes with conflict protection to prevent overwrites.
+- **Presigned Downloads**: Instantly generate shareable download links.
+
+### Uploads & Batch Actions
+- **Drag-and-Drop**: Easy uploading coupled with a dedicated verification/review queue and progress tracking.
+- **Multi-Selection**: Multi-row selection to process operations on multiple items simultaneously.
+
+### Interface
+- **Dynamic Theming**: Easily switch between light, dark, and system-matched theme modes.
 
 ## Quick Start
 
