@@ -72,6 +72,10 @@ const healthyCount = computed(() => {
   return Object.values(statuses.value).filter(s => s.status === "healthy").length;
 });
 
+const unhealthyCount = computed(() => {
+  return providers.value.length - healthyCount.value;
+});
+
 const totalVisibleBuckets = computed(() => {
   return Object.values(bucketCounts.value).reduce((sum, count) => sum + count, 0);
 });
@@ -171,9 +175,12 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
             <span class="metric-title">Registered Connections</span>
             <Server :size="16" class="metric-icon muted" />
           </div>
-          <div class="metric-content">
+          <div class="metric-content flex-wrap gap-6">
             <strong>{{ providers.length }}</strong>
-            <span class="metric-trend">{{ healthyCount }} healthy</span>
+            <span class="metric-trend success">{{ healthyCount }} healthy</span>
+            <span class="metric-trend" :class="unhealthyCount > 0 ? 'danger' : ''">
+              {{ unhealthyCount }} unhealthy
+            </span>
           </div>
           <p class="metric-caption">Storage nodes active in <code>providers/</code> directory.</p>
         </article>
@@ -533,5 +540,13 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
 .cursor-not-allowed {
   cursor: not-allowed !important;
   opacity: 0.6;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.gap-6 {
+  gap: 6px;
 }
 </style>
