@@ -133,10 +133,10 @@ onMounted(async () => {
 
     <!-- Getting Started Guides -->
     <section v-else class="dashboard-content-block">
-      <div class="block-header">
+      <div class="block-header section-block-header">
         <div>
-          <h2>Explore ObjectLens</h2>
-          <p>Quick shortcuts to browse, connect, and configure your object storage ecosystem.</p>
+          <h2 class="section-title-large">Explore ObjectLens</h2>
+          <p class="subtitle">Quick shortcuts to browse, connect, and configure your object storage ecosystem.</p>
         </div>
       </div>
 
@@ -218,6 +218,17 @@ onMounted(async () => {
 
 .landing-shortcut-card:hover {
   border-top-color: var(--accent);
+}
+
+.section-title-large {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.section-block-header {
+  margin-bottom: 24px;
 }
 
 .flex-center-left {

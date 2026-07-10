@@ -1212,8 +1212,13 @@ code,
   color: var(--text);
 }
 
-.sidebar-container.collapsed .toggle-button {
+.sidebar-container.collapsed .brand-link {
   display: none;
+}
+
+.sidebar-container.collapsed .toggle-button {
+  display: flex;
+  margin: 0 auto;
 }
 
 .sidebar-nav {
@@ -2025,4 +2030,51 @@ code,
 
 .text-accent {
   color: var(--accent);
+}
+
+/* Custom CSS Tooltips for Collapsed Sidebar Nav Items */
+.sidebar-container.collapsed [data-tooltip] {
+  position: relative;
+}
+
+.sidebar-container.collapsed [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.95);
+  background: #111827; /* Deep charcoal high-contrast */
+  color: #f3f4f6;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #374151;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 15%);
+}
+
+.sidebar-container.collapsed [data-tooltip]::before {
+  content: "";
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: transparent #374151 transparent transparent;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s ease;
+  z-index: 999;
+}
+
+.sidebar-container.collapsed [data-tooltip]:hover::after,
+.sidebar-container.collapsed [data-tooltip]:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
 }

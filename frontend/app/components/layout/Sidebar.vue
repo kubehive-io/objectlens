@@ -111,22 +111,22 @@ onMounted(() => {
     </div>
 
     <nav class="sidebar-nav" aria-label="Global links">
-      <NuxtLink to="/" class="nav-item" :class="{ active: route.path === '/' }" title="Dashboard Overview">
+      <NuxtLink to="/" class="nav-item" :class="{ active: route.path === '/' }" data-tooltip="Overview">
         <LayoutDashboard :size="18" />
         <span v-if="!isCollapsed">Overview</span>
       </NuxtLink>
 
-      <NuxtLink to="/providers" class="nav-item" :class="{ active: route.path.startsWith('/providers') }" title="Providers">
+      <NuxtLink to="/providers" class="nav-item" :class="{ active: route.path.startsWith('/providers') }" data-tooltip="Providers">
         <Server :size="18" />
         <span v-if="!isCollapsed">Providers</span>
       </NuxtLink>
 
-      <NuxtLink to="/buckets" class="nav-item" :class="{ active: route.path.startsWith('/buckets') }" title="Buckets">
+      <NuxtLink to="/buckets" class="nav-item" :class="{ active: route.path.startsWith('/buckets') }" data-tooltip="Buckets">
         <FolderOpen :size="18" />
         <span v-if="!isCollapsed">Buckets</span>
       </NuxtLink>
 
-      <NuxtLink to="/search" class="nav-item" :class="{ active: route.path === '/search' }" title="Global Search">
+      <NuxtLink to="/search" class="nav-item" :class="{ active: route.path === '/search' }" data-tooltip="Search">
         <Search :size="18" />
         <span v-if="!isCollapsed">Search</span>
       </NuxtLink>
@@ -136,18 +136,18 @@ onMounted(() => {
         :to="`/providers/${encodeURIComponent(currentProviderId)}/buckets/${encodeURIComponent(route.params.bucket as string)}/upload`"
         class="nav-item"
         :class="{ active: route.path.endsWith('/upload') }"
-        title="Upload"
+        data-tooltip="Uploads"
       >
         <Upload :size="18" />
         <span v-if="!isCollapsed">Uploads</span>
       </NuxtLink>
 
-      <NuxtLink to="/activity" class="nav-item" :class="{ active: route.path === '/activity' }" title="Activity Status">
+      <NuxtLink to="/activity" class="nav-item" :class="{ active: route.path === '/activity' }" data-tooltip="Activity">
         <Activity :size="18" />
         <span v-if="!isCollapsed">Activity</span>
       </NuxtLink>
 
-      <NuxtLink to="/settings" class="nav-item" :class="{ active: route.path === '/settings' }" title="Settings">
+      <NuxtLink to="/settings" class="nav-item" :class="{ active: route.path === '/settings' }" data-tooltip="Settings">
         <Settings :size="18" />
         <span v-if="!isCollapsed">Settings</span>
       </NuxtLink>
@@ -171,7 +171,7 @@ onMounted(() => {
 
       <!-- Theme Select Hover Dropdown -->
       <div class="theme-menu-container">
-        <button class="theme-menu-current" type="button" title="Select Theme">
+        <button class="theme-menu-current" type="button" data-tooltip="Theme Mode">
           <span v-if="themeMode === 'light'"><Sun :size="16" /><span v-if="!isCollapsed"> Light</span></span>
           <span v-else-if="themeMode === 'dark'"><Moon :size="16" /><span v-if="!isCollapsed"> Dark</span></span>
           <span v-else-if="themeMode === 'auto'"><Laptop :size="16" /><span v-if="!isCollapsed"> Auto</span></span>
@@ -190,7 +190,7 @@ onMounted(() => {
       </div>
 
       <!-- User Info & Version -->
-      <div class="user-block">
+      <div class="user-block" data-tooltip="v0.1.0">
         <User :size="18" class="user-avatar" />
         <div v-if="!isCollapsed" class="user-info">
           <span class="username">Developer</span>
