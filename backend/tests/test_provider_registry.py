@@ -68,7 +68,7 @@ spec:
     assert conn.access_key_id == "expanded-key-123"
 
 
-def test_provider_registry_raises_on_invalid_apiVersion_or_kind(tmp_path) -> None:
+def test_provider_registry_gracefully_handles_invalid_apiVersion_or_kind(tmp_path) -> None:
     config_dir = tmp_path / "providers"
     config_dir.mkdir()
     p_file = config_dir / "invalid.yaml"
@@ -82,11 +82,14 @@ spec:
 """)
 
     settings = Settings(providers_config_dir=str(config_dir))
-    with pytest.raises(ValueError, match="Invalid manifest format"):
-        ProviderRegistry(settings)
+    registry = ProviderRegistry(settings)
+    connections = registry.list_connections()
+    assert len(connections) == 1
+    assert connections[0].display_name == "Configuration Error"
+    assert "Invalid manifest format" in connections[0].error
 
 
-def test_provider_registry_raises_on_multiple_providers_in_single_file(tmp_path) -> None:
+def test_provider_registry_gracefully_handles_multiple_providers_in_single_file(tmp_path) -> None:
     config_dir = tmp_path / "providers"
     config_dir.mkdir()
     p_file = config_dir / "multiple.yaml"
@@ -102,8 +105,11 @@ spec:
 """)
 
     settings = Settings(providers_config_dir=str(config_dir))
-    with pytest.raises(ValueError, match="Multiple providers defined"):
-        ProviderRegistry(settings)
+    registry = ProviderRegistry(settings)
+    connections = registry.list_connections()
+    assert len(connections) == 1
+    assert connections[0].display_name == "Configuration Error"
+    assert "Multiple providers defined" in connections[0].error
 
 
 def test_provider_registry_raises_on_missing_dir() -> None:

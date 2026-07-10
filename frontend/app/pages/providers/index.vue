@@ -205,11 +205,19 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
             v-for="provider in filteredProviders"
             :key="provider.id"
             class="modern-provider-card provider-dashboard-card"
-            :class="statuses[provider.id]?.status === 'healthy' ? 'healthy-border' : 'unhealthy-border'"
+            :class="[provider.error ? 'error-border' : (statuses[provider.id]?.status === 'healthy' ? 'healthy-border' : 'unhealthy-border')]"
           >
             <div class="card-top-row">
               <span class="provider-type-badge">{{ provider.type }}</span>
               <span
+                v-if="provider.error"
+                class="provider-status-badge unhealthy"
+              >
+                <span class="status-dot-indicator" />
+                <span>Config Error</span>
+              </span>
+              <span
+                v-else
                 class="provider-status-badge"
                 :class="statuses[provider.id]?.status === 'healthy' ? 'healthy' : 'unhealthy'"
               >
@@ -228,22 +236,34 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
               
               <p class="description">{{ provider.description || "No description provided." }}</p>
               
-              <dl class="provider-card-meta-list">
-                <div class="meta-row">
-                  <dt><Globe :size="12" /> Endpoint URL</dt>
-                  <dd :title="provider.endpoint_url || 'AWS S3 Edge'">
-                    <code>{{ provider.endpoint_url || "AWS S3 Edge" }}</code>
-                  </dd>
+              <!-- Config Error Alert Panel -->
+              <div v-if="provider.error" class="card-error-panel">
+                <div class="error-panel-header">
+                  <AlertCircle :size="14" class="text-danger flex-shrink-0" />
+                  <span>Registry Load Error</span>
                 </div>
-                <div class="meta-row" v-if="provider.region">
-                  <dt><HardDrive :size="12" /> Active Region</dt>
-                  <dd>{{ provider.region }}</dd>
-                </div>
-              </dl>
+                <p class="error-desc-para" :title="provider.error">{{ provider.error }}</p>
+              </div>
 
-              <p class="bucket-indicator">
-                <strong>{{ bucketCounts[provider.id] ?? 0 }}</strong> buckets visible
-              </p>
+              <!-- Normal Metadata List -->
+              <template v-else>
+                <dl class="provider-card-meta-list">
+                  <div class="meta-row">
+                    <dt><Globe :size="12" /> Endpoint URL</dt>
+                    <dd :title="provider.endpoint_url || 'AWS S3 Edge'">
+                      <code>{{ provider.endpoint_url || "AWS S3 Edge" }}</code>
+                    </dd>
+                  </div>
+                  <div class="meta-row" v-if="provider.region">
+                    <dt><HardDrive :size="12" /> Active Region</dt>
+                    <dd>{{ provider.region }}</dd>
+                  </div>
+                </dl>
+
+                <p class="bucket-indicator">
+                  <strong>{{ bucketCounts[provider.id] ?? 0 }}</strong> buckets visible
+                </p>
+              </template>
             </div>
 
             <!-- Tag row -->
@@ -253,10 +273,23 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
 
             <!-- Action buttons footer -->
             <div class="card-actions-footer">
-              <NuxtLink class="btn btn-primary flex-center" :to="`/providers/${encodeURIComponent(provider.id)}`">
+              <NuxtLink
+                v-if="!provider.error"
+                class="btn btn-primary flex-center"
+                :to="`/providers/${encodeURIComponent(provider.id)}`"
+              >
                 <span>Explore</span>
                 <ArrowRight :size="14" />
               </NuxtLink>
+              <button
+                v-else
+                class="btn btn-secondary flex-center cursor-not-allowed"
+                disabled
+                title="Exploration is locked due to a configuration error. Please fix your YAML file or env variables."
+              >
+                <span>Explore Locked</span>
+                <ArrowRight :size="14" />
+              </button>
               <NuxtLink class="btn btn-secondary" :to="`/providers/${encodeURIComponent(provider.id)}/details`">
                 Details
               </NuxtLink>
@@ -419,5 +452,50 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
 
 .flex-shrink-0 {
   flex-shrink: 0;
+}
+
+/* Scoped Style overrides for Provider Error panels */
+.provider-dashboard-card.error-border {
+  border-top: 3px solid var(--danger);
+}
+
+.card-error-panel {
+  background: var(--danger-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.error-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.error-desc-para {
+  font-size: 12px;
+  color: var(--danger);
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+  opacity: 0.6;
 }
 </style>

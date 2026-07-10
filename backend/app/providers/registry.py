@@ -66,30 +66,53 @@ class ProviderRegistry:
             return []
             
         for config_path in yaml_files:
-            payload = yaml.safe_load(config_path.read_text()) or {}
-            
-            api_version = payload.get("apiVersion")
-            kind = payload.get("kind")
-            if api_version != "objectlens.kubehive.io/v1alpha1" or kind != "Provider":
-                raise ValueError(
-                    f"Invalid manifest format in {config_path.name}. "
-                    f"Expected apiVersion: 'objectlens.kubehive.io/v1alpha1' and kind: 'Provider', "
-                    f"got apiVersion: '{api_version}' and kind: '{kind}'"
+            try:
+                payload = yaml.safe_load(config_path.read_text()) or {}
+                
+                api_version = payload.get("apiVersion")
+                kind = payload.get("kind")
+                if api_version != "objectlens.kubehive.io/v1alpha1" or kind != "Provider":
+                    raise ValueError(
+                        f"Invalid manifest format in {config_path.name}. "
+                        f"Expected apiVersion: 'objectlens.kubehive.io/v1alpha1' "
+                        f"and kind: 'Provider', "
+                        f"got apiVersion: '{api_version}' and kind: '{kind}'"
+                    )
+                    
+                spec = payload.get("spec")
+                if not isinstance(spec, dict):
+                    raise ValueError(f"Missing or invalid 'spec' block in {config_path.name}")
+                    
+                if "providers" in spec:
+                    raise ValueError(
+                        f"Multiple providers defined in {config_path.name}. "
+                        f"Only a single provider is allowed per file under 'spec'."
+                    )
+                    
+                expanded_spec = self._expand_env_values(spec, str(config_path))
+                connection = ProviderConnection.model_validate(expanded_spec)
+                connections.append(connection)
+            except Exception as e:
+                # Safe fallback parsing of raw spec metadata without env expansion
+                try:
+                    raw_payload = yaml.safe_load(config_path.read_text()) or {}
+                    raw_spec = raw_payload.get("spec", {})
+                    p_id = raw_spec.get("id", config_path.stem)
+                    p_name = raw_spec.get("name", config_path.stem)
+                    p_type = raw_spec.get("type", "unknown")
+                except Exception:
+                    p_id = config_path.stem
+                    p_name = config_path.stem
+                    p_type = "unknown"
+                    
+                err_conn = ProviderConnection(
+                    id=p_id,
+                    name=p_name,
+                    type=p_type,
+                    description=f"Configuration load error in {config_path.name}",
+                    error=str(e)
                 )
-                
-            spec = payload.get("spec")
-            if not isinstance(spec, dict):
-                raise ValueError(f"Missing or invalid 'spec' block in {config_path.name}")
-                
-            if "providers" in spec:
-                raise ValueError(
-                    f"Multiple providers defined in {config_path.name}. "
-                    f"Only a single provider is allowed per file under 'spec'."
-                )
-                
-            expanded_spec = self._expand_env_values(spec, str(config_path))
-            connection = ProviderConnection.model_validate(expanded_spec)
-            connections.append(connection)
+                connections.append(err_conn)
             
         return connections
 
@@ -117,6 +140,20 @@ class ProviderRegistry:
         return [self.public_connection(connection) for connection in self._connections]
 
     def public_connection(self, connection: ProviderConnection) -> ProviderConnectionPublic:
+        if connection.error:
+            return ProviderConnectionPublic(
+                id=connection.id,
+                name=connection.name,
+                type=connection.type,
+                display_name="Configuration Error",
+                description=connection.description,
+                endpoint_url=connection.endpoint_url,
+                region=connection.region,
+                default_bucket=connection.default_bucket,
+                verify_ssl=connection.verify_ssl,
+                tags=connection.tags,
+                error=connection.error,
+            )
         provider = self.get(connection.id)
         return ProviderConnectionPublic(
             id=connection.id,

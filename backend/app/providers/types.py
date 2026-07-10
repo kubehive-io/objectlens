@@ -103,6 +103,7 @@ class ProviderConnection(BaseModel):
     verify_ssl: bool = True
     default_bucket: str | None = None
     tags: list[str] = Field(default_factory=list)
+    error: str | None = None
 
 
 class ProviderConnectionPublic(BaseModel):
@@ -116,3 +117,4 @@ class ProviderConnectionPublic(BaseModel):
     default_bucket: str | None = None
     verify_ssl: bool
     tags: list[str] = Field(default_factory=list)
+    error: str | None = None

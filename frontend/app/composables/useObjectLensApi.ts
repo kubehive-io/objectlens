@@ -45,6 +45,7 @@ export type ProviderConnection = {
   default_bucket?: string | null;
   verify_ssl: boolean;
   tags: string[];
+  error?: string | null;
 };
 
 export type ProviderStatus = {
