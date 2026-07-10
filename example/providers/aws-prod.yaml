@@ -1,0 +1,16 @@
+apiVersion: objectlens.kubehive.io/v1alpha1
+kind: Provider
+metadata:
+  name: aws-prod
+spec:
+  id: aws-prod
+  name: AWS Production
+  type: aws
+  description: Production AWS object storage
+  region: eu-west-1
+  access_key_id: ${AWS_PROD_ACCESS_KEY_ID}
+  secret_access_key: ${AWS_PROD_SECRET_ACCESS_KEY}
+  verify_ssl: true
+  tags:
+    - production
+    - aws

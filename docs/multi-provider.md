@@ -15,69 +15,40 @@ This is useful when the same ObjectLens instance needs to browse separate enviro
 
 ## Configuration
 
-Copy the example config and edit it locally:
+Create a `backend/data/providers/` directory, copy the example configurations, and edit them locally:
 
 ```bash
-cp example/.objectlens.providers.example.yaml .objectlens.providers.yaml
+mkdir -p backend/data/providers
+cp example/providers/*.yaml backend/data/providers/
 ```
 
-Example:
+Each provider is defined in its own file under the `backend/data/providers/` directory as a Kubernetes Custom Resource matching `kind: Provider` and `apiVersion: objectlens.kubehive.io/v1alpha1`.
+
+Example (`backend/data/providers/ceph-homelab.yaml`):
 
 ```yaml
-providers:
-  - id: ceph-homelab
-    name: Ceph Homelab
-    type: ceph
-    description: Homelab Ceph RGW cluster
-    endpoint_url: http://ceph-rgw.local:7480
-    region: us-east-1
-    access_key_id: ${CEPH_HOMELAB_ACCESS_KEY_ID}
-    secret_access_key: ${CEPH_HOMELAB_SECRET_ACCESS_KEY}
-    verify_ssl: false
-    tags: [homelab, ceph]
-
-  - id: ceph-lab
-    name: Ceph Lab
-    type: ceph
-    description: Lab Ceph RGW cluster
-    endpoint_url: http://ceph-lab-rgw.local:7480
-    region: us-east-1
-    access_key_id: ${CEPH_LAB_ACCESS_KEY_ID}
-    secret_access_key: ${CEPH_LAB_SECRET_ACCESS_KEY}
-    verify_ssl: false
-    tags: [lab, ceph]
-
-  - id: aws-prod
-    name: AWS Production
-    type: aws
-    description: Production AWS account
-    region: eu-west-1
-    access_key_id: ${AWS_PROD_ACCESS_KEY_ID}
-    secret_access_key: ${AWS_PROD_SECRET_ACCESS_KEY}
-    verify_ssl: true
-    tags: [production, aws]
-
-  - id: aws-backup
-    name: AWS Backup
-    type: aws
-    description: Backup AWS account
-    region: eu-west-1
-    access_key_id: ${AWS_BACKUP_ACCESS_KEY_ID}
-    secret_access_key: ${AWS_BACKUP_SECRET_ACCESS_KEY}
-    verify_ssl: true
-    tags: [backup, aws]
-
-  - id: garage-local
-    name: Garage Local
-    type: garage
-    description: Local Garage provider for dev and air-gapped testing
-    endpoint_url: http://localhost:3900
-    region: garage
-    access_key_id: ${GARAGE_LOCAL_ACCESS_KEY_ID}
-    secret_access_key: ${GARAGE_LOCAL_SECRET_ACCESS_KEY}
-    verify_ssl: false
-    tags: [local, dev]
+apiVersion: objectlens.kubehive.io/v1alpha1
+kind: Provider
+metadata:
+  name: ceph-homelab
+spec:
+  id: ceph-homelab
+  name: Ceph Homelab
+  type: ceph
+  description: Homelab Ceph RGW cluster
+  endpoint_url: http://ceph-rgw.local:7480
+  region: us-east-1
+  access_key_id: ${CEPH_HOMELAB_ACCESS_KEY_ID}
+  secret_access_key: ${CEPH_HOMELAB_SECRET_ACCESS_KEY}
+  verify_ssl: false
+  tags:
+    - homelab
+    - ceph
 ```
+
+### Hot Reloading
+
+If enabled in the configuration (`OBJECTLENS_PROVIDERS_RELOAD_INTERVAL=10`), the registry will automatically reload configuration changes from the `backend/data/providers/` directory at the specified interval in seconds, without requiring a service restart.
 
 Provider IDs are used in URLs and API paths, so keep them stable and unique. Names are shown in the UI and can be changed later.
 

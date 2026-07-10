@@ -1,0 +1,16 @@
+apiVersion: objectlens.kubehive.io/v1alpha1
+kind: Provider
+metadata:
+  name: aws-backup
+spec:
+  id: aws-backup
+  name: AWS Backup
+  type: aws
+  description: Backup AWS account
+  region: eu-west-1
+  access_key_id: ${AWS_BACKUP_ACCESS_KEY_ID}
+  secret_access_key: ${AWS_BACKUP_SECRET_ACCESS_KEY}
+  verify_ssl: true
+  tags:
+    - backup
+    - aws

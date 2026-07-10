@@ -1,0 +1,16 @@
+apiVersion: objectlens.kubehive.io/v1alpha1
+kind: Provider
+metadata:
+  name: aws-sandbox
+spec:
+  id: aws-sandbox
+  name: AWS Sandbox
+  type: aws
+  description: Sandbox AWS account
+  region: eu-west-1
+  access_key_id: ${AWS_SANDBOX_ACCESS_KEY_ID}
+  secret_access_key: ${AWS_SANDBOX_SECRET_ACCESS_KEY}
+  verify_ssl: true
+  tags:
+    - sandbox
+    - aws

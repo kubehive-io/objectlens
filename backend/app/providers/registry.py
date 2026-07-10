@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -17,37 +18,86 @@ from .types import ProviderConnection, ProviderConnectionPublic
 class ProviderRegistry:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
-        self.config_source = settings.providers_config_file
-        self._connections = self._load_connections()
+        self.config_source = settings.providers_config_dir
+        self._connections: list[ProviderConnection] = []
         self._instances: dict[str, ObjectStorageProvider] = {}
+        self._last_loaded_time = 0.0
+        self._load_all()
+
+    def _maybe_reload(self) -> None:
+        interval = self._settings.providers_reload_interval
+        if interval > 0:
+            if time.time() - self._last_loaded_time > interval:
+                self._load_all()
+
+    def _load_all(self) -> None:
+        connections = self._load_connections()
         seen: set[str] = set()
-        for connection in self._connections:
+        for connection in connections:
             if connection.id in seen:
                 raise ValueError(f"Duplicate provider connection id: {connection.id}")
             seen.add(connection.id)
+        
+        self._connections = connections
+        self._instances.clear()
+        self._last_loaded_time = time.time()
 
     def _load_connections(self) -> list[ProviderConnection]:
-        configured_path = Path(self._settings.providers_config_file)
+        configured_path = Path(self._settings.providers_config_dir)
         candidates = [configured_path]
         if not configured_path.is_absolute():
             candidates.append(Path("..") / configured_path)
-        config_path = next((path for path in candidates if path.exists()), configured_path)
-        if config_path.exists():
-            self.config_source = str(config_path)
-            payload = self._expand_env_values(yaml.safe_load(config_path.read_text()) or {})
-            connections = [
-                ProviderConnection.model_validate(item) for item in payload.get("providers", [])
-            ]
-            if not connections:
-                raise ValueError(f"No providers configured in {config_path}")
-            return connections
-        return [self._legacy_connection()]
+        config_dir = next(
+            (path for path in candidates if path.exists() and path.is_dir()),
+            configured_path,
+        )
+        
+        if not config_dir.exists() or not config_dir.is_dir():
+            raise FileNotFoundError(
+                f"Providers configuration directory not found or is not a directory: "
+                f"'{self._settings.providers_config_dir}'."
+            )
+            
+        self.config_source = str(config_dir)
+        connections: list[ProviderConnection] = []
+        
+        yaml_files = sorted(list(config_dir.glob("*.yaml")) + list(config_dir.glob("*.yml")))
+        if not yaml_files:
+            return []
+            
+        for config_path in yaml_files:
+            payload = yaml.safe_load(config_path.read_text()) or {}
+            
+            api_version = payload.get("apiVersion")
+            kind = payload.get("kind")
+            if api_version != "objectlens.kubehive.io/v1alpha1" or kind != "Provider":
+                raise ValueError(
+                    f"Invalid manifest format in {config_path.name}. "
+                    f"Expected apiVersion: 'objectlens.kubehive.io/v1alpha1' and kind: 'Provider', "
+                    f"got apiVersion: '{api_version}' and kind: '{kind}'"
+                )
+                
+            spec = payload.get("spec")
+            if not isinstance(spec, dict):
+                raise ValueError(f"Missing or invalid 'spec' block in {config_path.name}")
+                
+            if "providers" in spec:
+                raise ValueError(
+                    f"Multiple providers defined in {config_path.name}. "
+                    f"Only a single provider is allowed per file under 'spec'."
+                )
+                
+            expanded_spec = self._expand_env_values(spec, str(config_path))
+            connection = ProviderConnection.model_validate(expanded_spec)
+            connections.append(connection)
+            
+        return connections
 
-    def _expand_env_values(self, value: Any) -> Any:
+    def _expand_env_values(self, value: Any, file_source: str) -> Any:
         if isinstance(value, dict):
-            return {key: self._expand_env_values(item) for key, item in value.items()}
+            return {key: self._expand_env_values(item, file_source) for key, item in value.items()}
         if isinstance(value, list):
-            return [self._expand_env_values(item) for item in value]
+            return [self._expand_env_values(item, file_source) for item in value]
         if not isinstance(value, str):
             return value
 
@@ -56,41 +106,14 @@ class ProviderRegistry:
             if env_name not in os.environ:
                 raise ValueError(
                     f"Missing environment variable {env_name} referenced in "
-                    f"{self.config_source}"
+                    f"{file_source}"
                 )
             return os.environ[env_name]
 
         return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", replace, value)
 
-    def _legacy_connection(self) -> ProviderConnection:
-        provider_type = self._settings.objectlens_provider
-        if provider_type == "garage":
-            return ProviderConnection(
-                id="garage",
-                name="Garage",
-                type="garage",
-                endpoint_url=self._settings.garage_s3_endpoint_url,
-                region=self._settings.garage_s3_region,
-                access_key_id=self._settings.garage_s3_access_key_id,
-                secret_access_key=self._settings.garage_s3_secret_access_key,
-                default_bucket=self._settings.garage_s3_default_bucket,
-                verify_ssl=self._settings.garage_s3_verify_ssl,
-                tags=["garage"],
-            )
-        return ProviderConnection(
-            id="ceph",
-            name="Ceph RGW",
-            type="ceph",
-            endpoint_url=self._settings.ceph_s3_endpoint_url,
-            region=self._settings.ceph_s3_region,
-            access_key_id=self._settings.ceph_s3_access_key_id,
-            secret_access_key=self._settings.ceph_s3_secret_access_key,
-            default_bucket=self._settings.ceph_s3_default_bucket,
-            verify_ssl=self._settings.ceph_s3_verify_ssl,
-            tags=["ceph"],
-        )
-
     def list_connections(self) -> list[ProviderConnectionPublic]:
+        self._maybe_reload()
         return [self.public_connection(connection) for connection in self._connections]
 
     def public_connection(self, connection: ProviderConnection) -> ProviderConnectionPublic:
@@ -109,18 +132,21 @@ class ProviderRegistry:
         )
 
     def get_connection(self, provider_id: str) -> ProviderConnection:
+        self._maybe_reload()
         for connection in self._connections:
             if connection.id == provider_id:
                 return connection
         raise KeyError(provider_id)
 
     def get(self, provider_id: str) -> ObjectStorageProvider:
+        self._maybe_reload()
         if provider_id not in self._instances:
             connection = self.get_connection(provider_id)
             self._instances[provider_id] = self._create_provider(connection)
         return self._instances[provider_id]
 
     def default(self) -> ObjectStorageProvider:
+        self._maybe_reload()
         if not self._connections:
             raise ValueError("No provider connections configured")
         return self.get(self._connections[0].id)

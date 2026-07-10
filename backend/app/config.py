@@ -11,9 +11,15 @@ class Settings(BaseSettings):
         default="ceph",
         validation_alias=AliasChoices("OBJECTLENS_PROVIDER", "objectlens_provider"),
     )
-    providers_config_file: str = Field(
-        default=".objectlens.providers.yaml",
-        validation_alias=AliasChoices("OBJECTLENS_PROVIDERS_CONFIG", "providers_config_file"),
+    providers_config_dir: str = Field(
+        default="backend/data/providers",
+        validation_alias=AliasChoices("OBJECTLENS_PROVIDERS_CONFIG_DIR", "providers_config_dir"),
+    )
+    providers_reload_interval: int = Field(
+        default=0,
+        validation_alias=AliasChoices(
+            "OBJECTLENS_PROVIDERS_RELOAD_INTERVAL", "providers_reload_interval"
+        ),
     )
 
     ceph_s3_endpoint_url: str | None = Field(

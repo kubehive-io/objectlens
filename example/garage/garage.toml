@@ -1,16 +1,25 @@
+# Identification
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
 db_engine = "sqlite"
-replication_mode = "none"
-rpc_bind_addr = "[::]:3901"
-rpc_public_addr = "garage:3901"
-rpc_secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+# FIX: For a single node, we only want 1 copy of the data
+replication_factor = 1
+
+# Use a random hex string
+rpc_secret = "7468697369736166616b65736563726574646f6e6f74757365696e70726f6431"
+rpc_bind_addr = "0.0.0.0:3901"
+rpc_public_addr = "127.0.0.1:3901"
 
 [s3_api]
-s3_region = "garage"
-api_bind_addr = "[::]:3900"
+api_bind_addr = "0.0.0.0:3900"
 root_domain = ".s3.garage.localhost"
+s3_region = "garage"
 
 [s3_web]
-bind_addr = "[::]:3902"
+bind_addr = "0.0.0.0:3902"
 root_domain = ".web.garage.localhost"
+
+[admin]
+api_bind_addr = "0.0.0.0:3903"
+admin_token = "admin"

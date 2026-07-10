@@ -1,0 +1,17 @@
+apiVersion: objectlens.kubehive.io/v1alpha1
+kind: Provider
+metadata:
+  name: ceph-lab
+spec:
+  id: ceph-lab
+  name: Ceph Lab
+  type: ceph
+  description: Lab Ceph RGW cluster
+  endpoint_url: http://ceph-lab-rgw.local:7480
+  region: us-east-1
+  access_key_id: ${CEPH_LAB_ACCESS_KEY_ID}
+  secret_access_key: ${CEPH_LAB_SECRET_ACCESS_KEY}
+  verify_ssl: false
+  tags:
+    - lab
+    - ceph
