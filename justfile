@@ -35,10 +35,10 @@ clean:
     rm -rf backend/.venv frontend/node_modules frontend/.nuxt frontend/.output .pytest_cache .ruff_cache
 
 docker-up:
-    docker compose up --build
+    docker compose -f example/docker-compose.yaml up --build
 
 docker-down:
-    docker compose down
+    docker compose -f example/docker-compose.yaml down
 
 k8s-apply:
     helm upgrade --install objectlens chart/ --namespace objectlens --create-namespace

@@ -1,7 +1,7 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ../backend
     environment:
       OBJECTLENS_PROVIDER: ceph
       CEPH_S3_ENDPOINT_URL: http://minio:9000
@@ -21,7 +21,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
     environment:
       NUXT_PUBLIC_API_BASE_URL: http://localhost:8000
     ports:
@@ -60,7 +60,7 @@ services:
       - garage
     command: /garage server
     volumes:
-      - ./docker/garage/garage.toml:/etc/garage.toml:ro
+      - ./garage/garage.toml:/etc/garage.toml:ro
       - garage-data:/var/lib/garage
     ports:
       - "3900:3900"

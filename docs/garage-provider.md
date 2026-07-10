@@ -26,7 +26,7 @@ GARAGE_S3_VERIFY_SSL=false
 Start or connect to a Garage instance with the S3 API listening on `localhost:3900`, then configure ObjectLens:
 
 ```bash
-cp .env.example .env
+cp example/.env.example .env
 ```
 
 Edit `.env`:

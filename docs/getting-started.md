@@ -16,7 +16,7 @@ git clone <repo>
 cd objectlens
 
 devbox shell
-cp .env.example .env
+cp example/.env.example .env
 just install
 just dev
 ```
@@ -38,7 +38,7 @@ devbox run dev
 
 ## Local Ceph-Compatible Endpoint
 
-The default `.env.example` points at a local S3-compatible endpoint:
+The default `example/.env.example` points at a local S3-compatible endpoint:
 
 ```env
 OBJECTLENS_PROVIDER=ceph

@@ -18,7 +18,7 @@ This is useful when the same ObjectLens instance needs to browse separate enviro
 Copy the example config and edit it locally:
 
 ```bash
-cp .objectlens.providers.example.yaml .objectlens.providers.yaml
+cp example/.objectlens.providers.example.yaml .objectlens.providers.yaml
 ```
 
 Example:
@@ -113,4 +113,4 @@ flowchart TD
 
 ## Security Notes
 
-Do not commit `.objectlens.providers.yaml`. Keep real access keys in local secrets management, Kubernetes secrets, or another private configuration source. The checked-in `.objectlens.providers.example.yaml` intentionally uses placeholder credentials.
+Do not commit `.objectlens.providers.yaml`. Keep real access keys in local secrets management, Kubernetes secrets, or another private configuration source. The checked-in `example/.objectlens.providers.example.yaml` intentionally uses placeholder credentials.
