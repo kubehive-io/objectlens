@@ -11,10 +11,80 @@ import type {
 import { useObjectLensApi } from "../../composables/useObjectLensApi";
 import { useUploadQueue } from "../../composables/useUploadQueue";
 
+import {
+  Eye,
+  Edit3,
+  Move,
+  GitMerge,
+  Copy,
+  Trash2,
+  Download,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  Database,
+  Folder,
+  FolderOpen,
+  File,
+  FileText,
+  Settings,
+  AlertCircle,
+  Info,
+  ShieldCheck,
+  Check,
+  RefreshCw,
+  FileSpreadsheet,
+  FileImage,
+  FileCode
+} from "@lucide/vue";
+
 const route = useRoute();
 const router = useRouter();
 const api = useObjectLensApi();
 const uploadQueue = useUploadQueue();
+
+// Drawer state for modern Right-Side object details
+const isDrawerOpen = ref(false);
+const activeDrawerItem = ref<any>(null);
+const activePresignedUrl = ref<string | null>(null);
+
+async function openDetails(item: BucketBrowserItem) {
+  if (item.type !== "object" || !item.key) return;
+  activeDrawerItem.value = item;
+  isDrawerOpen.value = true;
+  try {
+    const response = await api.presignDownload(bucket.value, item.key, providerId.value || undefined);
+    activePresignedUrl.value = response.url;
+  } catch (err) {
+    console.error("Failed to fetch presigned URL for details drawer:", err);
+    activePresignedUrl.value = null;
+  }
+}
+
+function handleRowClick(item: BucketBrowserItem, event: Event) {
+  const target = event.target as HTMLElement;
+  if (target.closest("button") || target.closest("a") || target.closest("input")) {
+    return;
+  }
+  if (item.type === "object") {
+    openDetails(item);
+  } else if (item.type === "prefix" && item.prefix) {
+    openPrefix(item.prefix);
+  }
+}
+
+function handleDrawerDelete(item: any) {
+  openDeleteModal([item]);
+}
+
+function handleDrawerRename(item: any) {
+  openRenameModal([item]);
+}
+
+function handleDrawerMove(item: any) {
+  openMoveModal([item]);
+}
 
 const bucket = computed(() => String(route.params.bucket || ""));
 const providerId = computed(() => String(route.params.providerId || route.query.provider || ""));
@@ -522,87 +592,97 @@ onMounted(() => {
     </section>
 
     <section class="toolbar">
-      <label>
-        Search current path
-        <input v-model="search" placeholder="*-billing-*, *.json, invoice-*" />
-        <small class="muted">Supports patterns like *-billing-*, *.json, invoice-*</small>
-      </label>
-      <label>
-        Page size
-        <select v-model.number="pageSize">
-          <option :value="25">25</option>
-          <option :value="50">50</option>
-          <option :value="100">100</option>
-        </select>
-      </label>
-      <div class="upload-toolbar">
+      <div class="toolbar-search-box">
+        <Search :size="15" class="search-icon" />
+        <input v-model="search" placeholder="Search current path (e.g. *-billing-*, *.json, invoice-*)" />
+      </div>
+      <div class="toolbar-controls-right">
+        <div class="control-select-group">
+          <span>Show</span>
+          <select v-model.number="pageSize" class="control-select">
+            <option :value="25">25</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+          <span>items</span>
+        </div>
         <button
-          class="icon-action primary-icon"
+          class="btn btn-primary flex-center"
           type="button"
-          aria-label="Upload"
-          title="Upload"
+          aria-label="Upload File"
+          title="Upload File"
           @click="openUpload()"
         >
-          ⬆
+          <Upload :size="14" />
+          <span>Upload File</span>
         </button>
       </div>
     </section>
 
+    <!-- Bulks Bar Overlay -->
     <section v-if="selectedItems.length > 0" class="bulk-bar" aria-label="Bulk actions">
       <strong>{{ selectedItems.length }} selected</strong>
-      <button
-        class="icon-action"
-        type="button"
-        aria-label="Download selected"
-        :title="actionTitle(canDownload, 'Download selected', 'Download supports selected objects only')"
-        :disabled="!canDownload"
-        @click="bulkDownload"
-      >
-        ⬇
-      </button>
-      <button
-        class="icon-action danger-icon"
-        type="button"
-        aria-label="Delete selected"
-        title="Delete selected"
-        :disabled="!canDelete"
-        @click="openDeleteModal(selectedItems)"
-      >
-        🗑
-      </button>
-      <button
-        class="icon-action"
-        type="button"
-        aria-label="Move selected"
-        title="Move selected"
-        :disabled="!canMove"
-        @click="openMoveModal(selectedItems)"
-      >
-        📦
-      </button>
-      <button
-        class="icon-action"
-        type="button"
-        aria-label="Rename selected"
-        :title="actionTitle(canRename, 'Rename selected', 'Rename requires exactly one selected item')"
-        :disabled="!canRename"
-        @click="openRenameModal(selectedItems)"
-      >
-        ✏
-      </button>
-      <button
-        class="icon-action"
-        type="button"
-        aria-label="Merge prefixes"
-        :title="actionTitle(canMerge, 'Merge prefixes', 'Merge requires selected prefixes only')"
-        :disabled="!canMerge"
-        @click="openMergeModal(selectedItems)"
-      >
-        🔀
-      </button>
-      <button class="text-button" type="button" @click="clearSelection">Clear selection</button>
+      <div class="bulk-actions-group">
+        <button
+          class="btn btn-secondary flex-center"
+          type="button"
+          aria-label="Download selected"
+          :title="actionTitle(canDownload, 'Download selected', 'Download supports selected objects only')"
+          :disabled="!canDownload"
+          @click="bulkDownload"
+        >
+          <Download :size="14" />
+          <span>Download</span>
+        </button>
+        <button
+          class="btn btn-secondary flex-center"
+          type="button"
+          aria-label="Rename selected"
+          :title="actionTitle(canRename, 'Rename selected', 'Rename requires exactly one selected item')"
+          :disabled="!canRename"
+          @click="openRenameModal(selectedItems)"
+        >
+          <Edit3 :size="14" />
+          <span>Rename</span>
+        </button>
+        <button
+          class="btn btn-secondary flex-center"
+          type="button"
+          aria-label="Move selected"
+          title="Move selected"
+          :disabled="!canMove"
+          @click="openMoveModal(selectedItems)"
+        >
+          <Move :size="14" />
+          <span>Move</span>
+        </button>
+        <button
+          v-if="canMerge"
+          class="btn btn-secondary flex-center"
+          type="button"
+          aria-label="Merge prefixes"
+          title="Merge prefixes"
+          @click="openMergeModal(selectedItems)"
+        >
+          <GitMerge :size="14" />
+          <span>Merge</span>
+        </button>
+        <button
+          class="btn btn-secondary text-danger hover-danger flex-center"
+          type="button"
+          aria-label="Delete selected"
+          title="Delete selected"
+          :disabled="!canDelete"
+          @click="openDeleteModal(selectedItems)"
+        >
+          <Trash2 :size="14" />
+          <span>Delete</span>
+        </button>
+      </div>
+      <button class="btn btn-secondary" type="button" @click="clearSelection">Clear selection</button>
     </section>
 
+    <!-- Browser Table -->
     <section
       class="table-wrap browser-table drop-zone"
       :class="{ 'drag-active': dragActive }"
@@ -619,12 +699,12 @@ onMounted(() => {
           <p v-else>Browsing: {{ currentPrefix || "bucket root" }}</p>
         </div>
         <div class="pagination-controls">
-          <span>{{ objectRange }}</span>
-          <button :disabled="!listing?.pagination.has_previous || loadingObjects" @click="previousPage">
-            Previous
+          <span class="range-indicator">{{ objectRange }}</span>
+          <button :disabled="!listing?.pagination.has_previous || loadingObjects" @click="previousPage" class="btn btn-secondary icon-only">
+            <ChevronLeft :size="14" />
           </button>
-          <button :disabled="!listing?.pagination.has_next || loadingObjects" @click="nextPage">
-            Next
+          <button :disabled="!listing?.pagination.has_next || loadingObjects" @click="nextPage" class="btn btn-secondary icon-only">
+            <ChevronRight :size="14" />
           </button>
         </div>
       </div>
@@ -656,6 +736,8 @@ onMounted(() => {
               v-for="item in items"
               :key="item.prefix || item.key || item.name"
               :class="{ 'prefix-row': item.type === 'prefix' }"
+              class="clickable-row"
+              @click="handleRowClick(item, $event)"
             >
               <td class="select-col">
                 <input
@@ -666,7 +748,14 @@ onMounted(() => {
                 />
               </td>
               <td class="name-cell">
-                <span class="item-icon">{{ iconFor(item) }}</span>
+                <span class="item-icon">
+                  <Folder v-if="item.type === 'prefix'" :size="16" class="text-accent" />
+                  <FileImage v-else-if="item.icon === 'image'" :size="16" class="text-success" />
+                  <FileSpreadsheet v-else-if="item.icon === 'csv'" :size="16" class="text-warning" />
+                  <FileText v-else-if="item.icon === 'json'" :size="16" class="text-info" />
+                  <FileCode v-else-if="item.icon === 'parquet'" :size="16" class="text-danger" />
+                  <File v-else :size="16" class="text-muted" />
+                </span>
                 <button v-if="item.type === 'prefix' && item.prefix" class="row-link" @click="openPrefix(item.prefix)">
                   {{ item.name }}
                 </button>
@@ -684,27 +773,45 @@ onMounted(() => {
                   title="Open"
                   @click="openPrefix(item.prefix)"
                 >
-                  👁
+                  <FolderOpen :size="14" />
                 </button>
                 <button
-                  v-if="item.type === 'prefix' && item.prefix"
+                  v-if="item.type === 'object'"
                   class="icon-action"
                   type="button"
-                  aria-label="Rename prefix"
+                  aria-label="View Details"
+                  title="View Details"
+                  @click="openDetails(item)"
+                >
+                  <Eye :size="14" />
+                </button>
+                <button
+                  v-if="item.type === 'object'"
+                  class="icon-action"
+                  type="button"
+                  aria-label="Download object"
+                  title="Download"
+                  @click="downloadObject(item)"
+                >
+                  <Download :size="14" />
+                </button>
+                <button
+                  class="icon-action"
+                  type="button"
+                  aria-label="Rename item"
                   title="Rename"
                   @click="openRenameModal([item])"
                 >
-                  ✏
+                  <Edit3 :size="14" />
                 </button>
                 <button
-                  v-if="item.type === 'prefix' && item.prefix"
                   class="icon-action"
                   type="button"
-                  aria-label="Move prefix"
+                  aria-label="Move item"
                   title="Move"
                   @click="openMoveModal([item])"
                 >
-                  📦
+                  <Move :size="14" />
                 </button>
                 <button
                   v-if="item.type === 'prefix' && item.prefix"
@@ -714,7 +821,7 @@ onMounted(() => {
                   title="Merge"
                   @click="openMergeModal([item])"
                 >
-                  🔀
+                  <GitMerge :size="14" />
                 </button>
                 <button
                   class="icon-action"
@@ -723,68 +830,17 @@ onMounted(() => {
                   title="Copy path"
                   @click="copyPath(item)"
                 >
-                  📋
+                  <Copy :size="14" />
                 </button>
                 <button
-                  v-if="item.type === 'prefix' && item.prefix"
                   class="icon-action danger-icon"
                   type="button"
-                  aria-label="Delete prefix"
+                  aria-label="Delete item"
                   title="Delete"
                   @click="openDeleteModal([item])"
                 >
-                  🗑
+                  <Trash2 :size="14" />
                 </button>
-                <template v-if="item.type === 'object'">
-                  <NuxtLink
-                    v-if="item.key"
-                    class="icon-action icon-link-action"
-                    :to="`/objects/preview?bucket=${encodeURIComponent(bucket)}&key=${encodeURIComponent(item.key)}${providerId ? `&provider=${encodeURIComponent(providerId)}` : ''}`"
-                    aria-label="Preview object"
-                    title="Preview"
-                  >
-                    👁
-                  </NuxtLink>
-                  <button
-                    class="icon-action"
-                    type="button"
-                    aria-label="Download object"
-                    title="Download"
-                    @click="downloadObject(item)"
-                  >
-                    ⬇
-                  </button>
-                  <button
-                    v-if="item.key"
-                    class="icon-action"
-                    type="button"
-                    aria-label="Rename object"
-                    title="Rename"
-                    @click="openRenameModal([item])"
-                  >
-                    ✏
-                  </button>
-                  <button
-                    v-if="item.key"
-                    class="icon-action"
-                    type="button"
-                    aria-label="Move object"
-                    title="Move"
-                    @click="openMoveModal([item])"
-                  >
-                    📦
-                  </button>
-                  <button
-                    v-if="item.key"
-                    class="icon-action danger-icon"
-                    type="button"
-                    aria-label="Delete object"
-                    title="Delete"
-                    @click="openDeleteModal([item])"
-                  >
-                    🗑
-                  </button>
-                </template>
               </td>
             </tr>
           </template>
@@ -950,5 +1006,18 @@ onMounted(() => {
         </template>
       </section>
     </div>
+
+    <!-- Right-Side Sliding Details Drawer -->
+    <DetailsDrawer
+      :is-open="isDrawerOpen"
+      :item="activeDrawerItem"
+      :bucket="bucket"
+      :provider-id="providerId"
+      :presigned-url="activePresignedUrl"
+      @close="isDrawerOpen = false"
+      @delete="handleDrawerDelete"
+      @rename="handleDrawerRename"
+      @move="handleDrawerMove"
+    />
   </main>
 </template>
