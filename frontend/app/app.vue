@@ -36,28 +36,41 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="theme-switcher" aria-label="Theme mode">
-    <button
-      :class="{ active: themeMode === 'light' }"
-      type="button"
-      @click="setTheme('light')"
-    >
-      Light
+  <div class="theme-switcher-container" aria-label="Theme mode">
+    <button class="theme-switcher-current" type="button">
+      <span v-if="themeMode === 'light'">☀️ Light</span>
+      <span v-else-if="themeMode === 'dark'">🌙 Dark</span>
+      <span v-else-if="themeMode === 'auto'">🌓 Auto</span>
     </button>
-    <button
-      :class="{ active: themeMode === 'dark' }"
-      type="button"
-      @click="setTheme('dark')"
-    >
-      Dark
-    </button>
-    <button
-      :class="{ active: themeMode === 'auto' }"
-      type="button"
-      @click="setTheme('auto')"
-    >
-      Auto
-    </button>
+    <div class="theme-switcher-dropdown">
+      <button
+        :class="{ active: themeMode === 'light' }"
+        type="button"
+        title="Light Mode"
+        aria-label="Light Mode"
+        @click="setTheme('light')"
+      >
+        ☀️ Light
+      </button>
+      <button
+        :class="{ active: themeMode === 'dark' }"
+        type="button"
+        title="Dark Mode"
+        aria-label="Dark Mode"
+        @click="setTheme('dark')"
+      >
+        🌙 Dark
+      </button>
+      <button
+        :class="{ active: themeMode === 'auto' }"
+        type="button"
+        title="System Auto Mode"
+        aria-label="System Auto Mode"
+        @click="setTheme('auto')"
+      >
+        🌓 Auto
+      </button>
+    </div>
   </div>
   <NuxtPage />
 </template>
