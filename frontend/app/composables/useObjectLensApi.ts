@@ -220,6 +220,8 @@ export function useObjectLensApi() {
     health: () => request<HealthResponse>("/health"),
     provider: () => request<ProviderInfo>("/provider"),
     listProviders: () => request<ProviderConnection[]>("/providers"),
+    reloadProviders: () =>
+      request<ProviderConnection[]>("/providers/reload", { method: "POST" }),
     providerConnection: (providerId: string) =>
       request<ProviderConnection>(`/providers/${encodeURIComponent(providerId)}`),
     providerStatus: (providerId: string) =>

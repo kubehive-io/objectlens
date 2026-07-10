@@ -14,6 +14,13 @@ def list_providers() -> list[ProviderConnectionPublic]:
     return get_provider_registry().list_connections()
 
 
+@router.post("/providers/reload", response_model=list[ProviderConnectionPublic])
+def reload_providers() -> list[ProviderConnectionPublic]:
+    registry = get_provider_registry()
+    registry._load_all()
+    return registry.list_connections()
+
+
 @router.get("/providers/{provider_id}", response_model=ProviderConnectionPublic)
 def provider_connection(provider_id: str) -> ProviderConnectionPublic:
     registry = get_provider_registry()

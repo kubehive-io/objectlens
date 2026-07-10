@@ -17,7 +17,8 @@ import {
   HardDrive,
   Cpu,
   Cloud,
-  FolderOpen
+  FolderOpen,
+  RefreshCw
 } from "@lucide/vue";
 
 const api = useObjectLensApi();
@@ -26,8 +27,33 @@ const providers = ref<ProviderConnection[]>([]);
 const bucketCounts = ref<Record<string, number>>({});
 const statuses = ref<Record<string, ProviderStatus>>({});
 const loading = ref(true);
+const reloading = ref(false);
 const search = ref("");
 const error = ref("");
+
+async function manualReload() {
+  reloading.value = true;
+  try {
+    const updated = await api.reloadProviders();
+    providers.value = updated;
+    // Clear and recalculate individual statuses
+    statuses.value = {};
+    bucketCounts.value = {};
+    for (const provider of providers.value) {
+      try {
+        const status = await api.providerStatus(provider.id);
+        statuses.value[provider.id] = status;
+        bucketCounts.value[provider.id] = status.visible_bucket_count;
+      } catch {
+        bucketCounts.value[provider.id] = 0;
+      }
+    }
+  } catch (err) {
+    console.error("Manual configuration reload failed:", err);
+  } finally {
+    reloading.value = false;
+  }
+}
 
 const filteredProviders = computed(() => {
   const query = search.value.trim().toLowerCase();
@@ -83,7 +109,7 @@ onMounted(async () => {
         <h1>Storage Providers</h1>
         <p class="subtitle">Register, monitor, and explore S3-compatible, Ceph RGW, and Garage endpoints.</p>
       </div>
-      <div class="header-actions" v-if="!loading && providers.length > 0">
+      <div class="header-actions">
         <NuxtLink to="/settings" class="btn btn-secondary flex-center">
           <PlusCircle :size="16" />
           <span>Add Connection</span>
@@ -187,6 +213,16 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
         </div>
         <div class="toolbar-controls-right">
           <span class="range-indicator">{{ filteredProviders.length }} connection{{ filteredProviders.length === 1 ? '' : 's' }}</span>
+          <button
+            class="btn btn-secondary flex-center"
+            type="button"
+            :disabled="reloading"
+            @click="manualReload"
+            title="Rescan and reload all provider config files from the providers folder"
+          >
+            <RefreshCw :size="14" :class="{ spin: reloading }" />
+            <span>{{ reloading ? 'Reloading...' : 'Reload Config' }}</span>
+          </button>
         </div>
       </section>
 

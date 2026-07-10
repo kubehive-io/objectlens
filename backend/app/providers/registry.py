@@ -37,7 +37,7 @@ class ProviderRegistry:
             if connection.id in seen:
                 raise ValueError(f"Duplicate provider connection id: {connection.id}")
             seen.add(connection.id)
-        
+
         self._connections = connections
         self._instances.clear()
         self._last_loaded_time = time.time()
@@ -51,24 +51,24 @@ class ProviderRegistry:
             (path for path in candidates if path.exists() and path.is_dir()),
             configured_path,
         )
-        
+
         if not config_dir.exists() or not config_dir.is_dir():
             raise FileNotFoundError(
                 f"Providers configuration directory not found or is not a directory: "
                 f"'{self._settings.providers_config_dir}'."
             )
-            
+
         self.config_source = str(config_dir)
         connections: list[ProviderConnection] = []
-        
+
         yaml_files = sorted(list(config_dir.glob("*.yaml")) + list(config_dir.glob("*.yml")))
         if not yaml_files:
             return []
-            
+
         for config_path in yaml_files:
             try:
                 payload = yaml.safe_load(config_path.read_text()) or {}
-                
+
                 api_version = payload.get("apiVersion")
                 kind = payload.get("kind")
                 if api_version != "objectlens.kubehive.io/v1alpha1" or kind != "Provider":
@@ -78,17 +78,17 @@ class ProviderRegistry:
                         f"and kind: 'Provider', "
                         f"got apiVersion: '{api_version}' and kind: '{kind}'"
                     )
-                    
+
                 spec = payload.get("spec")
                 if not isinstance(spec, dict):
                     raise ValueError(f"Missing or invalid 'spec' block in {config_path.name}")
-                    
+
                 if "providers" in spec:
                     raise ValueError(
                         f"Multiple providers defined in {config_path.name}. "
                         f"Only a single provider is allowed per file under 'spec'."
                     )
-                    
+
                 expanded_spec = self._expand_env_values(spec, str(config_path))
                 connection = ProviderConnection.model_validate(expanded_spec)
                 connections.append(connection)
@@ -104,16 +104,16 @@ class ProviderRegistry:
                     p_id = config_path.stem
                     p_name = config_path.stem
                     p_type = "unknown"
-                    
+
                 err_conn = ProviderConnection(
                     id=p_id,
                     name=p_name,
                     type=p_type,
                     description=f"Configuration load error in {config_path.name}",
-                    error=str(e)
+                    error=str(e),
                 )
                 connections.append(err_conn)
-            
+
         return connections
 
     def _expand_env_values(self, value: Any, file_source: str) -> Any:
@@ -128,8 +128,7 @@ class ProviderRegistry:
             env_name = match.group(1)
             if env_name not in os.environ:
                 raise ValueError(
-                    f"Missing environment variable {env_name} referenced in "
-                    f"{file_source}"
+                    f"Missing environment variable {env_name} referenced in {file_source}"
                 )
             return os.environ[env_name]
 

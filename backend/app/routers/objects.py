@@ -100,7 +100,7 @@ def _prefix_move_plan(
     target_prefix: str,
     keys: list[str],
 ) -> list[tuple[str, str]]:
-    return [(key, f"{target_prefix}{key[len(source_prefix):]}") for key in keys]
+    return [(key, f"{target_prefix}{key[len(source_prefix) :]}") for key in keys]
 
 
 def _move_plan_for_items(
@@ -122,7 +122,7 @@ def _move_plan_for_items(
                 plan.append(
                     (
                         key,
-                        f"{target_prefix}{prefix_name}{key[len(source_prefix):]}",
+                        f"{target_prefix}{prefix_name}{key[len(source_prefix) :]}",
                         source_prefix,
                     )
                 )

@@ -12,7 +12,7 @@ def test_provider_registry_loads_valid_single_provider_manifests_from_dir(
     # Create test directory for configs
     config_dir = tmp_path / "providers"
     config_dir.mkdir()
-    
+
     # Provider 1
     p1_file = config_dir / "ceph.yaml"
     p1_file.write_text("""
@@ -58,11 +58,11 @@ spec:
 
     connections = registry.list_connections()
     assert len(connections) == 2
-    
+
     # Connections should be sorted by filename (aws, ceph)
     assert connections[0].id == "mock-aws"
     assert connections[1].id == "mock-ceph"
-    
+
     # Check that access_key_id was expanded
     conn = registry.get_connection("mock-ceph")
     assert conn.access_key_id == "expanded-key-123"
@@ -176,8 +176,8 @@ spec:
 def test_provider_registry_gracefully_handles_empty_directory(tmp_path) -> None:
     config_dir = tmp_path / "providers"
     config_dir.mkdir()
-    
+
     settings = Settings(providers_config_dir=str(config_dir))
     registry = ProviderRegistry(settings)
-    
+
     assert registry.list_connections() == []

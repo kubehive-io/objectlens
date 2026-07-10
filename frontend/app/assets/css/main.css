@@ -91,11 +91,12 @@ p {
 }
 
 .toolbar {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(140px, 180px) auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 16px;
-  align-items: end;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .section-block {
@@ -1098,7 +1099,8 @@ code,
   }
 
   .toolbar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .status-grid {
@@ -1524,8 +1526,6 @@ code,
    ========================================== */
 
 .dashboard-page {
-  max-width: 1200px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 32px;
