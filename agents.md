@@ -77,3 +77,4 @@ just test          # Run backend unit and integration tests
 
 ### 4. Writing Prose & Comments
 - **No Filler**: Write direct, human-like, non-slop documentation. State what the code does or why a change was made without preambles or generic boilerplate.
+- **Maintain the README Features List**: Always add new features to the features list in `README.md` when implementing them, or update them when modified. This ensures developers and users can easily see the software's capabilities and stay informed about additions or changes.

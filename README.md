@@ -36,7 +36,7 @@ git clone <repo>
 cd objectlens
 
 devbox shell
-cp .env.example .env
+cp example/.env.example .env
 just install
 just dev
 ```
