@@ -1,8 +1,9 @@
 from fnmatch import fnmatchcase
 
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
+from ..auth import get_current_user
 from ..config import get_settings
 from ..db import (
     bucket_index_stats,
@@ -33,7 +34,7 @@ from ..models import (
 )
 from ..providers import get_provider, get_provider_by_id
 
-router = APIRouter(tags=["buckets"])
+router = APIRouter(tags=["buckets"], dependencies=[Depends(get_current_user)])
 
 
 def _provider_or_error(provider_id: str | None = None):

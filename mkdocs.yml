@@ -23,6 +23,7 @@ nav:
   - Overview:
       - Home: index.md
       - Getting Started: getting-started.md
+      - User Guide: user-guide.md
       - Roadmap: roadmap.md
   - Architecture & Design:
       - System Overview: architecture.md

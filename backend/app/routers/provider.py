@@ -1,6 +1,9 @@
-from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
 
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import APIRouter, Depends, HTTPException
+
+from ..auth import User, get_current_user, require_role
 from ..config import get_settings
 from ..models import ProviderResponse, ProviderSettingsResponse, ProviderStatusResponse
 from ..providers import get_provider, get_provider_registry
@@ -10,12 +13,16 @@ router = APIRouter(tags=["provider"])
 
 
 @router.get("/providers", response_model=list[ProviderConnectionPublic])
-def list_providers() -> list[ProviderConnectionPublic]:
+def list_providers(
+    current_user: Annotated[User, Depends(get_current_user)] = None,
+) -> list[ProviderConnectionPublic]:
     return get_provider_registry().list_connections()
 
 
 @router.post("/providers/reload", response_model=list[ProviderConnectionPublic])
-def reload_providers() -> list[ProviderConnectionPublic]:
+def reload_providers(
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
+) -> list[ProviderConnectionPublic]:
     registry = get_provider_registry()
     registry._load_all()
     return registry.list_connections()

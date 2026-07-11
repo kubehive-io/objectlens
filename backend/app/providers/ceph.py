@@ -351,11 +351,28 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             return ObjectPreviewType.CSV
         if lower_key.endswith(".parquet"):
             return ObjectPreviewType.PARQUET
-        
+
         TEXT_EXTENSIONS = (
-            ".txt", ".md", ".log", ".yaml", ".yml", ".toml", ".ini", ".conf",
-            ".py", ".js", ".ts", ".go", ".rs", ".sh", ".c", ".cpp", ".h",
-            ".hpp", ".css", ".html"
+            ".txt",
+            ".md",
+            ".log",
+            ".yaml",
+            ".yml",
+            ".toml",
+            ".ini",
+            ".conf",
+            ".py",
+            ".js",
+            ".ts",
+            ".go",
+            ".rs",
+            ".sh",
+            ".c",
+            ".cpp",
+            ".h",
+            ".hpp",
+            ".css",
+            ".html",
         )
         if lower_content_type.startswith("text/") or any(
             lower_key.endswith(ext) for ext in TEXT_EXTENSIONS

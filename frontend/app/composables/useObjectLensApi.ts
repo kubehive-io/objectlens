@@ -205,6 +205,8 @@ export type OperationStatus = {
 export function useObjectLensApi() {
   const config = useRuntimeConfig();
   const baseUrl = config.public.apiBaseUrl;
+  const authCredentials = useCookie<string | null>("objectlens-auth-credentials", { default: () => null });
+  const authUser = useCookie<string | null>("objectlens-auth-username", { default: () => null });
 
   async function request<T>(
     path: string,
@@ -212,20 +214,52 @@ export function useObjectLensApi() {
       method?: "GET" | "POST" | "DELETE";
       query?: Record<string, string | number | undefined>;
       body?: BodyInit | Record<string, unknown>;
+      headers?: Record<string, string>;
     },
   ): Promise<T> {
+    const headers = { ...(options?.headers || {}) };
+    if (authCredentials.value) {
+      headers["Authorization"] = `Basic ${authCredentials.value}`;
+    }
+
     try {
       return await $fetch<T>(path, {
         baseURL: baseUrl,
         ...options,
+        headers,
       });
     } catch (error) {
-      const fetchError = error as { data?: { detail?: string }; message?: string };
+      const fetchError = error as { status?: number; data?: { detail?: string }; message?: string };
+      if (fetchError.status === 401) {
+        authCredentials.value = null;
+        authUser.value = null;
+      }
       throw new Error(fetchError.data?.detail || fetchError.message || "ObjectLens API request failed");
     }
   }
 
   return {
+    isLoggedIn: () => !!authCredentials.value,
+    getCurrentUsername: () => authUser.value,
+    login: async (username: string, password: string) => {
+      const token = btoa(`${username}:${password}`);
+      try {
+        const headers = { Authorization: `Basic ${token}` };
+        await $fetch("/providers", {
+          baseURL: baseUrl,
+          headers,
+        });
+        authCredentials.value = token;
+        authUser.value = username;
+        return true;
+      } catch (err) {
+        throw new Error("Invalid username or password");
+      }
+    },
+    logout: () => {
+      authCredentials.value = null;
+      authUser.value = null;
+    },
     health: () => request<HealthResponse>("/health"),
     provider: () => request<ProviderInfo>("/provider"),
     listProviders: () => request<ProviderConnection[]>("/providers"),

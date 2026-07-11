@@ -11,6 +11,14 @@ class Settings(BaseSettings):
         default="ceph",
         validation_alias=AliasChoices("OBJECTLENS_PROVIDER", "objectlens_provider"),
     )
+    auth_type: str = Field(
+        default="none",
+        validation_alias=AliasChoices("OBJECTLENS_AUTH_TYPE", "auth_type"),
+    )
+    users_config_dir: str = Field(
+        default="backend/data/users",
+        validation_alias=AliasChoices("OBJECTLENS_USERS_CONFIG_DIR", "users_config_dir"),
+    )
     providers_config_dir: str = Field(
         default="backend/data/providers",
         validation_alias=AliasChoices("OBJECTLENS_PROVIDERS_CONFIG_DIR", "providers_config_dir"),

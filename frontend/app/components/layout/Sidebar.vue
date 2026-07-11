@@ -17,7 +17,8 @@ import {
   Laptop,
   Moon,
   Sun,
-  Anchor
+  Anchor,
+  LogOut
 } from "@lucide/vue";
 
 const api = useObjectLensApi();
@@ -83,6 +84,11 @@ function applyTheme(mode: typeof themeMode.value) {
 function setTheme(mode: typeof themeMode.value) {
   themeMode.value = mode;
   applyTheme(mode);
+}
+
+function handleLogout() {
+  api.logout();
+  window.location.reload();
 }
 
 onMounted(() => {
@@ -184,12 +190,21 @@ onMounted(() => {
       </div>
 
       <!-- User Info & Version -->
-      <div class="user-block" data-tooltip="v0.1.0">
+      <div class="user-block" :data-tooltip="api.isLoggedIn() ? `Signed in as ${api.getCurrentUsername()}` : 'v0.1.0'">
         <User :size="18" class="user-avatar" />
-        <div v-if="!isCollapsed" class="user-info">
-          <span class="username">Developer</span>
+        <div v-if="!isCollapsed" class="user-info flex-grow">
+          <span class="username">{{ api.isLoggedIn() ? api.getCurrentUsername() : "Developer" }}</span>
           <span class="version">v0.1.0</span>
         </div>
+        <button
+          v-if="!isCollapsed && api.isLoggedIn()"
+          class="btn-logout-sidebar"
+          type="button"
+          title="Sign Out"
+          @click="handleLogout"
+        >
+          <LogOut :size="14" />
+        </button>
       </div>
     </div>
   </aside>

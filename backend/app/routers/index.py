@@ -1,6 +1,9 @@
-from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
 
+from botocore.exceptions import BotoCoreError, ClientError
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from ..auth import User, require_role
 from ..config import get_settings
 from ..db import log_activity, upsert_objects
 from ..models import ScanResponse
@@ -10,14 +13,18 @@ router = APIRouter(tags=["index"])
 
 
 @router.post("/index/scan", response_model=ScanResponse)
-def scan_bucket(bucket: str = Query(..., min_length=1)) -> ScanResponse:
-    return scan_provider_bucket(None, bucket)
+def scan_bucket(
+    bucket: str = Query(..., min_length=1),
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
+) -> ScanResponse:
+    return scan_provider_bucket(None, bucket, current_user)
 
 
 @router.post("/providers/{provider_id}/index/scan", response_model=ScanResponse)
 def scan_provider_bucket(
     provider_id: str | None = None,
     bucket: str = Query(..., min_length=1),
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> ScanResponse:
     scanned = 0
     indexed = 0
@@ -53,8 +60,7 @@ def scan_provider_bucket(
             type="warning",
             title="Bucket Sync Failed",
             description=(
-                f"Scan failed on connection '{provider_id or 'default'}' "
-                f"bucket '{bucket}': {exc}"
+                f"Scan failed on connection '{provider_id or 'default'}' bucket '{bucket}': {exc}"
             ),
         )
         raise HTTPException(status_code=502, detail=f"Failed to scan bucket: {exc}") from exc

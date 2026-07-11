@@ -37,6 +37,11 @@ ObjectLens is documented with MkDocs Material.
 - **DB-Backed Auditing**: Real, persistent SQLite `activity_log` tracking of bucket indexing, file uploads, file deletions, and prefix directory deletions.
 - **Operations Timeline**: Beautiful paginated audit log timeline supporting default 50-event pages and relative, human-friendly date formatting.
 
+### Security & Access Control
+- **Declarative YAML Authentication**: Deploy role permissions by placing clean user manifests (e.g. `data/users/admin.yaml`) with passwords.
+- **Granular RBAC Enforcements**: Separates `viewer` (read-only list, search, download, preview) and `admin` (write, upload, recursive delete, move, scan) privileges.
+- **HTTP Basic Auth Integration**: Simple stateless S3 security configured dynamically on backend startup.
+
 ### Interface
 - **Dynamic Theming**: Easily switch between light, dark, and system-matched theme modes.
 
@@ -58,6 +63,22 @@ Open:
 Frontend: http://localhost:3000
 Backend Swagger: http://localhost:8000/docs
 ```
+
+## Security & RBAC Configuration
+
+To activate role-based access control, adjust these settings in your `.env` file:
+
+```env
+# Enable authentication: "none" (no login, default) or "local" (YAML manifests)
+OBJECTLENS_AUTH_TYPE=local
+
+# Folder storing YAML user manifests (defaults to backend/data/users)
+OBJECTLENS_USERS_CONFIG_DIR=backend/data/users
+```
+
+On first startup with `OBJECTLENS_AUTH_TYPE=local`, ObjectLens automatically populates default account manifests in your config directory:
+- **Admin:** `admin` / `adminpassword` (Full read/write privileges)
+- **Viewer:** `viewer` / `viewerpassword` (Read-only browsing and downloading)
 
 ## Documentation
 

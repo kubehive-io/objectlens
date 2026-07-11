@@ -1,10 +1,11 @@
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
+from ..auth import get_current_user
 from ..db import count_activities, list_activities
 
-router = APIRouter(tags=["activity"])
+router = APIRouter(tags=["activity"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("/activity", response_model=list[dict[str, Any]])

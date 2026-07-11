@@ -324,7 +324,7 @@ def search_objects(
     statement = select(object_metadata)
     if clauses:
         statement = statement.where(and_(*clauses))
-    
+
     statement = (
         statement.order_by(desc(object_metadata.c.last_modified), object_metadata.c.key.asc())
         .limit(limit)
@@ -500,10 +500,7 @@ def log_activity(type: str, title: str, description: str, duration: str | None =
 
 def list_activities(limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
     statement = (
-        select(activity_log)
-        .order_by(desc(activity_log.c.timestamp))
-        .limit(limit)
-        .offset(offset)
+        select(activity_log).order_by(desc(activity_log.c.timestamp)).limit(limit).offset(offset)
     )
     with get_engine().connect() as conn:
         result = conn.execute(statement)

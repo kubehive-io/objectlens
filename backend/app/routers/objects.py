@@ -2,8 +2,9 @@ import mimetypes
 from typing import Annotated
 
 from botocore.exceptions import BotoCoreError, ClientError
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
+from ..auth import User, get_current_user, require_role
 from ..config import get_settings
 from ..db import (
     delete_object_metadata,
@@ -32,7 +33,7 @@ from ..models import (
 from ..operations import create_operation, get_operation, update_operation
 from ..providers import get_provider, get_provider_by_id
 
-router = APIRouter(tags=["objects"])
+router = APIRouter(tags=["objects"], dependencies=[Depends(get_current_user)])
 
 
 def _provider_or_error(provider_id: str | None = None):
@@ -157,7 +158,7 @@ def objects(
     if provider_id or bucket:
         provider = _provider_or_error(provider_id)
         provider_key = _provider_key(provider)
-        
+
     rows = search_objects(
         provider=provider_key,
         bucket=bucket,
@@ -220,6 +221,7 @@ def delete_object(
     bucket: str = Query(..., min_length=1),
     key: str = Query(..., min_length=1),
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> DeleteObjectResponse:
     try:
         provider = _provider_or_error(provider_id)
@@ -253,6 +255,7 @@ def delete_prefix(
     bucket: str = Query(..., min_length=1),
     prefix: str = Query(...),
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> DeletePrefixResponse:
     normalized_prefix = prefix.strip()
     if normalized_prefix in {"", "/"}:
@@ -299,6 +302,7 @@ def upload_object(
     metadata: str | None = Query(default=None),
     cache_control: str | None = Query(default=None),
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> UploadObjectResponse:
     if not key:
         filename = (file.filename or "").replace("\\", "/").split("/")[-1].strip()
@@ -348,10 +352,7 @@ def upload_object(
         log_activity(
             type="error",
             title="Upload System Error",
-            description=(
-                f"System error during upload of '{key}' "
-                f"to bucket '{bucket}': {exc}"
-            ),
+            description=(f"System error during upload of '{key}' to bucket '{bucket}': {exc}"),
         )
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -365,7 +366,11 @@ def upload_object(
 
 @router.post("/providers/{provider_id}/objects/rename", response_model=ObjectMetadata)
 @router.post("/objects/rename", response_model=ObjectMetadata)
-def rename_object(payload: RenameObjectRequest, provider_id: str | None = None) -> ObjectMetadata:
+def rename_object(
+    payload: RenameObjectRequest,
+    provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
+) -> ObjectMetadata:
     if payload.source_key == payload.target_key:
         raise HTTPException(status_code=400, detail="Source and target keys must be different.")
     try:
@@ -391,6 +396,7 @@ def rename_object(payload: RenameObjectRequest, provider_id: str | None = None) 
 def rename_prefix(
     payload: RenamePrefixRequest,
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> ObjectOperationSummary:
     source_prefix = _normalize_prefix(payload.source_prefix)
     target_prefix = _normalize_prefix(payload.target_prefix)
@@ -456,6 +462,7 @@ def rename_prefix(
 def move_objects(
     payload: MoveObjectsRequest,
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> ObjectOperationSummary:
     target_prefix = _normalize_prefix(payload.target_prefix)
     if not payload.items:
@@ -518,6 +525,7 @@ def move_objects(
 def merge_prefixes(
     payload: MergePrefixesRequest,
     provider_id: str | None = None,
+    current_user: Annotated[User, Depends(require_role("admin"))] = None,
 ) -> MergePrefixesResponse:
     source_prefix = _normalize_prefix(payload.source_prefix)
     target_prefix = _normalize_prefix(payload.target_prefix)
