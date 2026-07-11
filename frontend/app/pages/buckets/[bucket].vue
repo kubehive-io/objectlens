@@ -540,54 +540,81 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="app-shell">
-    <nav class="breadcrumb real-breadcrumb" aria-label="Bucket path">
-      <NuxtLink v-for="(crumb, index) in breadcrumbs" :key="crumb.to" :to="crumb.to">
-        {{ crumb.label }}<span v-if="index < breadcrumbs.length - 1">›</span>
-      </NuxtLink>
-    </nav>
-
-    <section class="topbar compact-topbar">
-      <div>
-        <h1>{{ bucket }}</h1>
-        <p>
-          Provider: {{ provider?.name || provider?.display_name || providerId || "default" }}.
-          Browsing automatically indexes the current prefix.
+  <div class="bucket-browser-page">
+    <!-- Header -->
+    <header class="page-title-section">
+      <div class="header-text-block">
+        <div class="title-with-icon-row">
+          <FolderOpen :size="24" class="text-accent" />
+          <h1>{{ bucket }}</h1>
+        </div>
+        <p class="subtitle">
+          Provider: {{ provider?.name || provider?.display_name || providerId || "default" }} · Browsing automatically indexes S3 metadata.
         </p>
       </div>
-      <div class="inline-actions">
+      <div class="header-actions">
         <NuxtLink
           v-if="providerId"
-          class="text-button"
+          class="btn btn-secondary flex-center"
           :to="`/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/details`"
         >
-          Details
+          <Info :size="14" />
+          <span>Details</span>
         </NuxtLink>
-        <button class="primary" :disabled="scanning" @click="scanBucket">
-          <span :class="{ spin: scanning }">↻</span>
-          {{ scanning ? "Scanning" : "Deep scan bucket" }}
+        <button class="btn btn-secondary flex-center" :disabled="scanning" @click="scanBucket">
+          <RefreshCw :size="14" :class="{ spin: scanning }" />
+          <span>{{ scanning ? "Scanning..." : "Deep Scan" }}</span>
         </button>
       </div>
-    </section>
+    </header>
 
     <div v-if="error" class="alert error">{{ error }}</div>
     <div v-if="notice" class="alert success">{{ notice }}</div>
 
-    <section class="status-grid compact-grid">
-      <article class="status-card">
-        <span class="label">Provider</span>
-        <strong>{{ provider?.display_name || summary?.provider || details?.provider || "Ceph RGW" }}</strong>
-        <p>{{ provider?.endpoint_url || "Endpoint not configured" }}</p>
+    <!-- Metrics Cards Row -->
+    <section class="metrics-card-grid" aria-label="Bucket index metrics summary">
+      <!-- Metric 1: Parent Provider connection -->
+      <article class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Provider Connection</span>
+          <Server :size="16" class="metric-icon muted" />
+        </div>
+        <div class="metric-content">
+          <strong class="text-ellipsis" :title="provider?.display_name || summary?.provider || details?.provider || 'S3 Host'">
+            {{ provider?.display_name || summary?.provider || details?.provider || "S3 Host" }}
+          </strong>
+          <span class="metric-trend">{{ provider?.type || "s3" }}</span>
+        </div>
+        <p class="metric-caption text-ellipsis" :title="provider?.endpoint_url || 'Endpoint not configured'">
+          {{ provider?.endpoint_url || "Endpoint not configured" }}
+        </p>
       </article>
-      <article class="status-card">
-        <span class="label">Indexed objects</span>
-        <strong>{{ details?.indexed_object_count ?? summary?.indexed_object_count ?? 0 }}</strong>
-        <p>{{ formatBytes(details?.indexed_total_size ?? summary?.indexed_total_size) }} indexed</p>
+
+      <!-- Metric 2: Total Indexed objects -->
+      <article class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Cached Metadata</span>
+          <Database :size="16" class="metric-icon muted" />
+        </div>
+        <div class="metric-content">
+          <strong>{{ details?.indexed_object_count ?? summary?.indexed_object_count ?? 0 }}</strong>
+          <span class="metric-trend success">Indexed</span>
+        </div>
+        <p class="metric-caption">
+          {{ formatBytes(details?.indexed_total_size ?? summary?.indexed_total_size) }} total size scanned.
+        </p>
       </article>
-      <article class="status-card">
-        <span class="label">Last indexed</span>
-        <strong>{{ formatDate(details?.last_indexed_at ?? summary?.last_indexed_at) }}</strong>
-        <p>Current prefix loads automatically.</p>
+
+      <!-- Metric 3: Last sync timestamp -->
+      <article class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Last Indexed At</span>
+          <Activity :size="16" class="metric-icon muted" />
+        </div>
+        <div class="metric-content">
+          <strong class="font-date-text">{{ formatDate(details?.last_indexed_at ?? summary?.last_indexed_at) }}</strong>
+        </div>
+        <p class="metric-caption">Prefix auto-sync on directory access is enabled.</p>
       </article>
     </section>
 
@@ -1019,5 +1046,38 @@ onMounted(() => {
       @rename="handleDrawerRename"
       @move="handleDrawerMove"
     />
-  </main>
+  </div>
 </template>
+
+<style scoped>
+.bucket-browser-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.title-with-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-with-icon-row h1 {
+  margin: 0 !important;
+}
+
+.font-date-text {
+  font-size: 14px !important;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>

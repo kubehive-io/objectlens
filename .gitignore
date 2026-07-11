@@ -2,6 +2,10 @@
 .objectlens.providers.yaml
 .DS_Store
 
+# ObjectLens Storage Providers
+backend/data/providers/*
+!backend/data/providers/README.md
+
 # Python
 __pycache__/
 *.py[cod]
