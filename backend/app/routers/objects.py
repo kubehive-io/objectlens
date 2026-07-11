@@ -145,15 +145,19 @@ def _conflicts(provider, bucket: str, target_keys: list[str]) -> list[str]:
 
 @router.get("/objects", response_model=ObjectListResponse)
 def objects(
-    bucket: str = Query(..., min_length=1),
+    provider_id: str | None = None,
+    bucket: str | None = Query(default=None, min_length=1),
     prefix: str | None = Query(default=None),
     search: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
 ) -> ObjectListResponse:
     # TODO: Add OpenSearch support for large-scale metadata search.
-    provider = _provider_or_error()
-    provider_key = _provider_key(provider)
+    provider_key = None
+    if provider_id or bucket:
+        provider = _provider_or_error(provider_id)
+        provider_key = _provider_key(provider)
+        
     rows = search_objects(
         provider=provider_key,
         bucket=bucket,

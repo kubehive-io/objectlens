@@ -3,6 +3,7 @@ name = "objectlens-backend"
 version = "0.1.0"
 description = "FastAPI backend for ObjectLens"
 readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.12"
 dependencies = [
     "aiosqlite>=0.20.0",

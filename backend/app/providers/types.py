@@ -41,6 +41,7 @@ class ObjectPreviewType(StrEnum):
     CSV = "csv"
     PARQUET = "parquet"
     IMAGE = "image"
+    TEXT = "text"
     UNSUPPORTED = "unsupported"
 
 

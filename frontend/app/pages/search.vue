@@ -102,11 +102,8 @@ watch(query, async (newQuery) => {
   
   loading.value = true;
   try {
-    // Search objects in the first visible bucket as a showcase
-    const targetBucket = buckets.value[0].name;
-    const targetProvider = buckets.value[0].providerId;
+    // Search objects globally across all providers and buckets
     const res = await api.listObjects({
-      bucket: targetBucket,
       search: cleaned,
       limit: 15
     });

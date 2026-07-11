@@ -57,6 +57,8 @@ onMounted(async () => {
 
       <pre v-if="preview.preview_type === 'json'" class="code-preview">{{ preview.text }}</pre>
 
+      <pre v-else-if="preview.preview_type === 'text'" class="code-preview text-preview">{{ preview.text }}</pre>
+
       <div v-else-if="preview.preview_type === 'csv'" class="table-wrap">
         <table>
           <thead>

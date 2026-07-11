@@ -233,6 +233,16 @@ class CephObjectStorageProvider(ObjectStorageProvider):
                 truncated,
                 download_url,
             )
+        if preview_type == ObjectPreviewType.TEXT:
+            return self._text_preview(
+                bucket,
+                key,
+                content_type,
+                metadata.size,
+                content,
+                truncated,
+                download_url,
+            )
 
         return ObjectPreview(
             bucket=bucket,
@@ -341,6 +351,17 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             return ObjectPreviewType.CSV
         if lower_key.endswith(".parquet"):
             return ObjectPreviewType.PARQUET
+        
+        TEXT_EXTENSIONS = (
+            ".txt", ".md", ".log", ".yaml", ".yml", ".toml", ".ini", ".conf",
+            ".py", ".js", ".ts", ".go", ".rs", ".sh", ".c", ".cpp", ".h",
+            ".hpp", ".css", ".html"
+        )
+        if lower_content_type.startswith("text/") or any(
+            lower_key.endswith(ext) for ext in TEXT_EXTENSIONS
+        ):
+            return ObjectPreviewType.TEXT
+
         return ObjectPreviewType.UNSUPPORTED
 
     def _json_preview(
@@ -372,6 +393,42 @@ class CephObjectStorageProvider(ObjectStorageProvider):
             bucket=bucket,
             key=key,
             preview_type=ObjectPreviewType.JSON,
+            content_type=content_type,
+            size=size,
+            truncated=truncated,
+            text=text,
+            download_url=download_url,
+            reason=reason,
+        )
+
+    def _text_preview(
+        self,
+        bucket: str,
+        key: str,
+        content_type: str | None,
+        size: int,
+        content: bytes,
+        truncated: bool,
+        download_url: str,
+    ) -> ObjectPreview:
+        try:
+            text = content.decode("utf-8")
+            reason = "Preview reads only a limited amount of the object." if truncated else None
+        except UnicodeDecodeError:
+            return ObjectPreview(
+                bucket=bucket,
+                key=key,
+                preview_type=ObjectPreviewType.UNSUPPORTED,
+                content_type=content_type,
+                size=size,
+                truncated=truncated,
+                download_url=download_url,
+                reason="Text preview failed: utf-8 decoding error.",
+            )
+        return ObjectPreview(
+            bucket=bucket,
+            key=key,
+            preview_type=ObjectPreviewType.TEXT,
             content_type=content_type,
             size=size,
             truncated=truncated,

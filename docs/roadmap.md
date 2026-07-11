@@ -29,7 +29,6 @@
 - Multi-provider support
 - Audit logs
 - Audit logging for previews/downloads
-- Object preview
 - Bulk actions
 - Cursor-based pagination
 - Better continuation-token based pagination
@@ -38,7 +37,6 @@
 - Prefix-level statistics
 - Recursive prefix indexing jobs
 - Background index refresh
-- Object type icons and richer previews
 - Multi-file upload
 - Resumable upload
 - Upload progress

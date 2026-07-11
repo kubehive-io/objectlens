@@ -1,17 +1,17 @@
 <script setup lang="ts">
-const route = useRoute();
+import { navigateTo, useRoute } from "#app";
 
-await navigateTo({
-  path: `/buckets/${encodeURIComponent(String(route.params.bucket || ""))}`,
-  query: {
-    provider: String(route.params.providerId || ""),
-    ...(route.query.prefix ? { prefix: String(route.query.prefix) } : {}),
-  },
+const route = useRoute();
+const providerId = route.params.providerId as string;
+const bucket = route.params.bucket as string;
+const prefix = (route.query.prefix as string) || "";
+
+// Redirect to the unified bucket browser
+navigateTo(`/buckets/${encodeURIComponent(bucket)}?provider=${encodeURIComponent(providerId)}&prefix=${encodeURIComponent(prefix)}`, {
+  replace: true,
 });
 </script>
 
 <template>
-  <main class="app-shell">
-    <div class="empty-panel">Opening bucket...</div>
-  </main>
+  <div class="empty-panel">Redirecting to unified bucket view...</div>
 </template>

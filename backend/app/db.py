@@ -304,23 +304,29 @@ def indexed_common_prefixes(provider: str, bucket: str, parent_prefix: str) -> l
 
 
 def search_objects(
-    provider: str,
-    bucket: str,
+    provider: str | None = None,
+    bucket: str | None = None,
     prefix: str | None = None,
     search: str | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[dict[str, Any]]:
-    clauses = [object_metadata.c.provider == provider, object_metadata.c.bucket == bucket]
+    clauses = []
+    if provider:
+        clauses.append(object_metadata.c.provider == provider)
+    if bucket:
+        clauses.append(object_metadata.c.bucket == bucket)
     if prefix:
         clauses.append(object_metadata.c.key.like(f"{prefix}%"))
     if search:
         clauses.append(object_metadata.c.key.like(f"%{search}%"))
 
+    statement = select(object_metadata)
+    if clauses:
+        statement = statement.where(and_(*clauses))
+    
     statement = (
-        select(object_metadata)
-        .where(and_(*clauses))
-        .order_by(desc(object_metadata.c.last_modified), object_metadata.c.key.asc())
+        statement.order_by(desc(object_metadata.c.last_modified), object_metadata.c.key.asc())
         .limit(limit)
         .offset(offset)
     )

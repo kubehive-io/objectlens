@@ -23,7 +23,7 @@ ObjectLens is documented with MkDocs Material.
 - **Detailed Insights**: Paginated bucket browsing complete with indexed storage statistics.
 
 ### Previews & Actions
-- **Rich File Previews**: Built-in viewing for CSV, JSON, Parquet, and image files.
+- **Rich File Previews**: Built-in viewing for text files, code (Python, Go, JS, etc), CSV, JSON, Parquet, and images.
 - **Direct Operations**: Rename, move, delete single objects, or recursively clean up entire prefixes.
 - **Safe Merges**: Merge prefixes with conflict protection to prevent overwrites.
 - **Presigned Downloads**: Instantly generate shareable download links.

@@ -59,6 +59,15 @@ onMounted(async () => {
 
 <template>
   <div class="provider-explore-page">
+    <!-- Breadcrumb Path -->
+    <nav class="breadcrumb real-breadcrumb" aria-label="Provider path">
+      <NuxtLink to="/">Dashboard</NuxtLink>
+      <span class="breadcrumb-separator">/</span>
+      <NuxtLink to="/providers">Providers</NuxtLink>
+      <span class="breadcrumb-separator">/</span>
+      <span class="current">{{ provider?.name || providerId }}</span>
+    </nav>
+
     <!-- Header -->
     <header class="page-title-section">
       <div class="header-text-block">

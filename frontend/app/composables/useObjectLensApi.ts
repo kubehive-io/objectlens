@@ -153,7 +153,7 @@ export type BucketObjectListing = {
 export type ObjectPreview = {
   bucket: string;
   key: string;
-  preview_type: "json" | "csv" | "parquet" | "image" | "unsupported";
+  preview_type: "json" | "csv" | "parquet" | "image" | "text" | "unsupported";
   content_type?: string | null;
   size?: number | null;
   truncated: boolean;
@@ -254,7 +254,7 @@ export function useObjectLensApi() {
       request<BucketSettings>(
         `/providers/${encodeURIComponent(providerId)}/buckets/${encodeURIComponent(bucket)}/settings`,
       ),
-    listObjects: (params: { bucket: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
+    listObjects: (params: { providerId?: string; bucket?: string; prefix?: string; search?: string; limit?: number; offset?: number }) =>
       request<{ objects: ObjectMetadata[]; count: number }>("/objects", { query: params }),
     listBucketObjects: (
       bucket: string,
