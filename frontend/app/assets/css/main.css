@@ -1214,13 +1214,6 @@ code,
   font-size: 18px;
 }
 
-.brand-logo-img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
 .toggle-button {
   background: transparent;
   border: none;

@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Laptop,
   Moon,
-  Sun
+  Sun,
+  Anchor
 } from "@lucide/vue";
 
 const api = useObjectLensApi();
@@ -101,7 +102,6 @@ onMounted(() => {
   <aside class="sidebar-container" :class="{ collapsed: isCollapsed }" aria-label="Main Navigation">
     <div class="sidebar-header">
       <NuxtLink to="/" class="brand-link" title="ObjectLens Dashboard">
-        <img src="~/assets/images/logo.png" alt="ObjectLens Logo" class="brand-logo-img" />
         <span v-if="!isCollapsed" class="brand-name">ObjectLens</span>
       </NuxtLink>
       <button class="toggle-button" type="button" :title="isCollapsed ? 'Expand' : 'Collapse'" @click="toggleSidebar">

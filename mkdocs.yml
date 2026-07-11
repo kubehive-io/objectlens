@@ -4,7 +4,6 @@ site_url: https://example.com/objectlens
 
 theme:
   name: material
-  logo: images/logo.png
   features:
     - navigation.tabs
     - navigation.tabs.sticky
