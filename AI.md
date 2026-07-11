@@ -1,4 +1,4 @@
-# ObjectLens AI Agent Guide
+# ObjectLens Project Guidelines (GEMINI.md)
 
 Welcome, AI Agent. This document outlines the architecture, coding standards, and developer workflow for **ObjectLens** so you can work productively and safely in this codebase.
 
@@ -6,8 +6,8 @@ Welcome, AI Agent. This document outlines the architecture, coding standards, an
 
 ## Technical Stack
 
-- **Backend**: Python 12, FastAPI, `uv` package manager, SQLite (via `aiosqlite` and `sqlalchemy`).
-- **Frontend**: Nuxt 4 (Vue 3), TypeScript, Vanilla CSS.
+- **Backend**: Python 12/FastAPI, SQLAlchemy, SQLite (`objectlens.db` via SQLAlchemy).
+- **Frontend**: Nuxt 4 (Vue 3 with TypeScript), Lucide icons, Vanilla CSS.
 - **Infrastructure**: Local development via Devbox, containerization via Docker Compose, deployment via Helm and Kubernetes.
 
 ---
@@ -24,7 +24,7 @@ When making modifications in this repository, assume these expert professional r
 ### 2. Backend Scope (`/backend`)
 - **Persona**: **Principal Systems Architect & Senior Backend Engineer**
 - **Philosophy**: Async-first, high-performance, strictly typed API engines.
-- **Conventions**: Zero-leak server configurations, clean domain isolation (such as the `ObjectStorageProvider` factory interface), comprehensive async database structures with SQLAlchemy/aiosqlite, robust validation schemas, and complete unit-test coverage using pytest.
+- **Conventions**: Zero-leak server configurations, clean domain isolation (such as the `ObjectStorageProvider` factory interface), SQLite database schemas, robust validation models, and complete unit-test coverage using pytest.
 
 ---
 
@@ -32,10 +32,10 @@ When making modifications in this repository, assume these expert professional r
 
 - `/backend` - FastAPI app, SQLite schemas, S3-compatible provider interfaces, and tests.
   - `/backend/app/providers` - Storage provider abstractions (`base.py`) and implementations (Ceph, AWS S3, Garage).
-  - `/backend/app/routers` - API endpoints.
+  - `/backend/app/routers` - API endpoints (including dynamic indexing, objects, and activity logs).
   - `/backend/tests` - Pytest suites.
 - `/frontend` - Nuxt 4 application.
-  - `/frontend/app/composables` - Shared API client and queue state.
+  - `/frontend/app/composables` - Shared API client, upload queue state, and metadata structures.
   - `/frontend/app/pages` - Routing pages (Vue 3 with `<script setup lang="ts">`).
 - `/chart` - Deployment Helm chart.
 - `justfile` - Common tasks and developer commands.
@@ -49,12 +49,13 @@ Backend routes do not call storage SDKs directly. They interact with an interfac
 - **Factory Pattern**: The factory in `backend/app/providers/factory.py` resolves and instantiates the active provider based on configuration.
 - **Provider Registration**: New S3-style or custom storage backends must implement `ObjectStorageProvider` and register themselves with the registry.
 
-### 2. SQLite Metadata State
-Metadata indexing and internal application state are managed via an asynchronous SQLite database using `aiosqlite` and SQLAlchemy. Ensure database queries in routes are fully asynchronous.
+### 2. SQLite Metadata & Activity Logs State
+Metadata indexing, prefix index states, parent-child folder structures, and persistent logs are managed via a local SQLite database using SQLAlchemy.
+- **`activity_log` Table**: Operations (metadata scans, file uploads, file deletions, directory deletions) are persistently written to SQLite via helper methods `log_activity()` and queried via `list_activities(limit, offset)`.
 
 ### 3. Frontend Architecture
 The Nuxt 4 frontend uses file-based routing inside `/frontend/app/pages`.
-- **API Interaction**: Use the `useObjectLensApi` composable for all API client operations. Do not hardcode endpoint addresses.
+- **API Interaction**: Use the `useObjectLensApi` composable for all API client operations (such as query search, paginated operations logs, and bucket listings). Do not hardcode endpoint addresses.
 - **Styling**: Enforce clean, modular Vanilla CSS. Avoid installing Tailwind or heavy styling frameworks unless explicitly requested.
 
 ---
@@ -80,7 +81,6 @@ just test          # Run backend unit and integration tests
 ### 1. Python & Backend
 - **Formatting**: Always format and check backend changes with `ruff`. Check code constraints (line length 100).
 - **Type Safety**: Enforce strict type hints for all function arguments and return types. Use Pydantic schemas for data validation.
-- **Async Execution**: Endpoints and long-running I/O operations must use async/await.
 
 ### 2. Vue & Frontend
 - **Type Safety**: Use TypeScript exclusively. Avoid `any` types; prefer strict interfaces or types.
@@ -89,7 +89,6 @@ just test          # Run backend unit and integration tests
 
 ### 3. Deployments & Kubernetes
 - **Helm Over Manifests**: Make any infrastructure changes in `chart/` (templates or `values.yaml`). Do not create loose Kubernetes YAML manifests.
-- **Standard Best Practices**: Ensure the Helm chart remains generic. Keep environment-specific settings (like credentials or hosts) in `values.yaml` or as override fields.
 
 ### 4. Writing Prose & Comments
 - **No Filler**: Write direct, human-like, non-slop documentation. State what the code does or why a change was made without preambles or generic boilerplate.

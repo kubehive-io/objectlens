@@ -370,9 +370,10 @@ export function useObjectLensApi() {
         body: payload,
       }),
     operationStatus: (operationId: string) => request<OperationStatus>(`/operations/${operationId}`),
-    listActivities: (limit?: number) =>
+    listActivities: (limit?: number, offset?: number) =>
       request<ActivityLog[]>("/activity", {
-        query: { limit },
+        query: { limit, offset },
       }),
+    getActivityCount: () => request<{ total: number }>("/activity/count"),
   };
 }

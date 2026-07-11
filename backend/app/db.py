@@ -492,8 +492,13 @@ def log_activity(type: str, title: str, description: str, duration: str | None =
     return log_id
 
 
-def list_activities(limit: int = 50) -> list[dict[str, Any]]:
-    statement = select(activity_log).order_by(desc(activity_log.c.timestamp)).limit(limit)
+def list_activities(limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
+    statement = (
+        select(activity_log)
+        .order_by(desc(activity_log.c.timestamp))
+        .limit(limit)
+        .offset(offset)
+    )
     with get_engine().connect() as conn:
         result = conn.execute(statement)
         return [
@@ -507,3 +512,9 @@ def list_activities(limit: int = 50) -> list[dict[str, Any]]:
             }
             for row in result
         ]
+
+
+def count_activities() -> int:
+    statement = select(func.count()).select_from(activity_log)
+    with get_engine().connect() as conn:
+        return conn.execute(statement).scalar() or 0

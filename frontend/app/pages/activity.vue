@@ -23,6 +23,15 @@ const totalSyncedCount = ref(0);
 
 const activityLogs = ref<ActivityLog[]>([]);
 
+// Pagination State
+const currentPage = ref(1);
+const pageSize = ref(50); // Default to showing 50 events per page!
+const totalActivities = ref(0);
+
+const totalPages = computed(() => {
+  return Math.ceil(totalActivities.value / pageSize.value) || 1;
+});
+
 function formatLogTime(isoString: string) {
   if (!isoString) return "";
   const date = new Date(isoString);
@@ -41,18 +50,53 @@ onMounted(async () => {
   await refreshAllMetrics();
 });
 
+async function fetchPaginatedLogs() {
+  try {
+    const countRes = await api.getActivityCount();
+    totalActivities.value = countRes.total;
+    
+    const offset = (currentPage.value - 1) * pageSize.value;
+    activityLogs.value = await api.listActivities(pageSize.value, offset);
+  } catch (err) {
+    console.error("Failed to fetch paginated logs:", err);
+  }
+}
+
+async function nextPage() {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    loading.value = true;
+    await fetchPaginatedLogs();
+    loading.value = false;
+  }
+}
+
+async function prevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+    loading.value = true;
+    await fetchPaginatedLogs();
+    loading.value = false;
+  }
+}
+
+async function goToPage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    loading.value = true;
+    await fetchPaginatedLogs();
+    loading.value = false;
+  }
+}
+
 async function refreshAllMetrics() {
   loading.value = true;
   try {
     const health = await api.health();
     backendHealthy.value = health.status === "ok";
     
-    // Fetch real activity logs from SQLite!
-    try {
-      activityLogs.value = await api.listActivities(25);
-    } catch (err) {
-      console.error("Failed to fetch real operation logs:", err);
-    }
+    // Fetch paginated operation logs from SQLite!
+    await fetchPaginatedLogs();
     
     // Calculate total indexed objects dynamically to display real metrics!
     const providers = await api.listProviders();
@@ -145,27 +189,82 @@ async function refreshAllMetrics() {
       </div>
 
       <!-- Real timeline list -->
-      <div v-if="activityLogs.length > 0" class="timeline-container">
-        <div v-for="log in activityLogs" :key="log.id" class="timeline-item">
-          <!-- Left side icon indicator -->
-          <div class="timeline-badge" :class="log.type">
-            <CheckCircle2 v-if="log.type === 'success'" :size="14" />
-            <AlertTriangle v-else-if="log.type === 'warning' || log.type === 'error'" :size="14" />
-            <Clock v-else :size="14" />
-          </div>
-
-          <!-- Middle text description -->
-          <div class="timeline-content-body">
-            <div class="timeline-title-row">
-              <h4>{{ log.title }}</h4>
-              <span class="timeline-time">{{ formatLogTime(log.timestamp) }}</span>
+      <div v-if="activityLogs.length > 0" class="timeline-container-wrap">
+        <div class="timeline-container">
+          <div v-for="log in activityLogs" :key="log.id" class="timeline-item">
+            <!-- Left side icon indicator -->
+            <div class="timeline-badge" :class="log.type">
+              <CheckCircle2 v-if="log.type === 'success'" :size="14" />
+              <AlertTriangle v-else-if="log.type === 'warning' || log.type === 'error'" :size="14" />
+              <Clock v-else :size="14" />
             </div>
-            <p class="timeline-desc">{{ log.description }}</p>
-          </div>
 
-          <!-- Right side duration/stats -->
-          <div class="timeline-stats" v-if="log.duration">
-            <span class="duration-pill">{{ log.duration }}</span>
+            <!-- Middle text description -->
+            <div class="timeline-content-body">
+              <div class="timeline-title-row">
+                <h4>{{ log.title }}</h4>
+                <span class="timeline-time">{{ formatLogTime(log.timestamp) }}</span>
+              </div>
+              <p class="timeline-desc">{{ log.description }}</p>
+            </div>
+
+            <!-- Right side duration/stats -->
+            <div class="timeline-stats" v-if="log.duration">
+              <span class="duration-pill">{{ log.duration }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Symmetrical Pagination Row -->
+        <div class="pagination-toolbar mt-24 border-top pt-16">
+          <span class="range-indicator font-mono">
+            Showing {{ (currentPage - 1) * pageSize + 1 }} - {{ Math.min(currentPage * pageSize, totalActivities) }} of {{ totalActivities }} events
+          </span>
+          
+          <div class="pagination-controls-right">
+            <button
+              class="btn btn-secondary btn-xs btn-pagination"
+              type="button"
+              :disabled="currentPage === 1"
+              @click="goToPage(1)"
+              title="First Page"
+            >
+              <span>First</span>
+            </button>
+            <button
+              class="btn btn-secondary btn-xs btn-pagination"
+              type="button"
+              :disabled="currentPage === 1"
+              @click="prevPage"
+              title="Previous Page"
+            >
+              <span>Prev</span>
+            </button>
+            
+            <div class="pagination-pages-badge">
+              <span class="current-page-num">{{ currentPage }}</span>
+              <span class="pages-separator">/</span>
+              <span class="total-pages-num">{{ totalPages }}</span>
+            </div>
+
+            <button
+              class="btn btn-secondary btn-xs btn-pagination"
+              type="button"
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+              title="Next Page"
+            >
+              <span>Next</span>
+            </button>
+            <button
+              class="btn btn-secondary btn-xs btn-pagination"
+              type="button"
+              :disabled="currentPage === totalPages"
+              @click="goToPage(totalPages)"
+              title="Last Page"
+            >
+              <span>Last</span>
+            </button>
           </div>
         </div>
       </div>
@@ -288,6 +387,60 @@ async function refreshAllMetrics() {
   color: var(--muted-strong);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+/* Pagination Styling */
+.pagination-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.pagination-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-pagination {
+  min-width: 56px;
+  text-align: center;
+  justify-content: center;
+}
+
+.pagination-pages-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--panel-subtle);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.current-page-num {
+  color: var(--accent);
+}
+
+.pages-separator {
+  color: var(--border);
+}
+
+.total-pages-num {
+  color: var(--muted-strong);
+}
+
+.pt-16 {
+  padding-top: 16px;
 }
 
 .empty-dashboard-state-v2 {
