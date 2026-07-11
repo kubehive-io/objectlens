@@ -21,6 +21,7 @@ interface UnifiedBucket {
   providerId: string;
   providerName: string;
   providerType: string;
+  providerDescription?: string | null;
 }
 
 const api = useObjectLensApi();
@@ -52,7 +53,8 @@ onMounted(async () => {
           creation_date: b.creation_date,
           providerId: p.id,
           providerName: p.name,
-          providerType: p.type
+          providerType: p.type,
+          providerDescription: p.description
         }));
       } catch (err) {
         console.error(`Failed to load buckets for provider ${p.id}:`, err);
@@ -135,7 +137,7 @@ function formatDate(value?: string | null) {
               <Folder :size="20" class="text-accent flex-shrink-0" />
               <h3>{{ bucket.name }}</h3>
             </div>
-            <p class="description">Global catalog bucket. Access folders, files, prefixes, and edit lifecycle settings.</p>
+            <p class="description">{{ bucket.providerDescription || "Active storage bucket. Access folders, files, prefixes, and edit lifecycle settings." }}</p>
             <div class="connection-meta">
               <span class="endpoint"><Calendar :size="11" /> Created: {{ formatDate(bucket.creation_date) }}</span>
             </div>
