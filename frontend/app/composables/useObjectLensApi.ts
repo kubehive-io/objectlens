@@ -83,6 +83,15 @@ export type PrefixSummary = {
   total_size: number;
 };
 
+export type ActivityLog = {
+  id: string;
+  type: "success" | "warning" | "info" | "error";
+  title: string;
+  description: string;
+  timestamp: string;
+  duration?: string | null;
+};
+
 export type BucketSummary = {
   provider: string;
   bucket: string;
@@ -301,12 +310,26 @@ export function useObjectLensApi() {
         method: "DELETE",
         query: { bucket, prefix },
       }),
-    uploadObject: (bucket: string, prefix: string, file: File, providerId?: string) => {
+    uploadObject: (
+      bucket: string,
+      prefix: string,
+      file: File,
+      providerId?: string,
+      key?: string,
+      cacheControl?: string,
+      metadata?: Record<string, string>,
+    ) => {
       const body = new FormData();
       body.append("file", file);
       return request<ObjectMetadata>(providerId ? `/providers/${encodeURIComponent(providerId)}/objects/upload` : "/objects/upload", {
         method: "POST",
-        query: { bucket, prefix },
+        query: {
+          bucket,
+          prefix,
+          ...(key ? { key } : {}),
+          ...(cacheControl ? { cache_control: cacheControl } : {}),
+          ...(metadata ? { metadata: JSON.stringify(metadata) } : {}),
+        },
         body,
       });
     },
@@ -347,5 +370,9 @@ export function useObjectLensApi() {
         body: payload,
       }),
     operationStatus: (operationId: string) => request<OperationStatus>(`/operations/${operationId}`),
+    listActivities: (limit?: number) =>
+      request<ActivityLog[]>("/activity", {
+        query: { limit },
+      }),
   };
 }

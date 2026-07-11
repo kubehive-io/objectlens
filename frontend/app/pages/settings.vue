@@ -126,7 +126,7 @@ function triggerDbOptimize() {
           </div>
 
           <p class="settings-info-p text-muted">
-            ObjectLens enforces rigorous credential isolation. Raw S3/Ceph Access and Secret Keys are never exposed through the API or returned to the browser. Keys are loaded directly as secure server-side variables or referenced via local environments.
+            ObjectLens enforces rigorous credential isolation. Raw connection Access and Secret Keys are never exposed through the API or returned to the browser. Keys are loaded directly as secure server-side variables or referenced via local environments.
           </p>
 
           <div v-if="loading" class="dashboard-skeleton-loader">Loading credentials checks...</div>
@@ -158,7 +158,7 @@ function triggerDbOptimize() {
             </div>
           </div>
           <p class="sidebar-guide-text">
-            To register S3, Ceph, or Garage providers, copy the templates from <code>example/providers/</code> directly into your local <code>backend/data/providers/</code> folder.
+            To register Ceph, Garage, or other providers, copy the templates from <code>example/providers/</code> directly into your local <code>backend/data/providers/</code> folder.
           </p>
           <pre class="code-pre-box"><code>mkdir -p backend/data/providers
 cp example/providers/*.yaml backend/data/providers/</code></pre>

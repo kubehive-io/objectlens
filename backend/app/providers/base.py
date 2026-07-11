@@ -78,6 +78,8 @@ class ObjectStorageProvider(ABC):
         key: str,
         file_obj,
         content_type: str | None = None,
+        metadata: dict[str, str] | None = None,
+        cache_control: str | None = None,
     ) -> ObjectInfo:
         raise NotImplementedError
 

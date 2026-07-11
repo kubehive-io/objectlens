@@ -131,13 +131,7 @@ onMounted(() => {
         <span v-if="!isCollapsed">Search</span>
       </NuxtLink>
 
-      <NuxtLink
-        v-if="currentProviderId && route.params.bucket"
-        :to="`/providers/${encodeURIComponent(currentProviderId)}/buckets/${encodeURIComponent(route.params.bucket as string)}/upload`"
-        class="nav-item"
-        :class="{ active: route.path.endsWith('/upload') }"
-        data-tooltip="Uploads"
-      >
+      <NuxtLink to="/upload" class="nav-item" :class="{ active: route.path === '/upload' }" data-tooltip="Uploads">
         <Upload :size="18" />
         <span v-if="!isCollapsed">Uploads</span>
       </NuxtLink>

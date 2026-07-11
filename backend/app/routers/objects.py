@@ -5,7 +5,13 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 
 from ..config import get_settings
-from ..db import delete_object_metadata, delete_prefix_metadata, search_objects, upsert_objects
+from ..db import (
+    delete_object_metadata,
+    delete_prefix_metadata,
+    log_activity,
+    search_objects,
+    upsert_objects,
+)
 from ..models import (
     DeleteObjectResponse,
     DeletePrefixResponse,
@@ -215,7 +221,20 @@ def delete_object(
         provider = _provider_or_error(provider_id)
         result = provider.delete_object(bucket=bucket, key=key)
         delete_object_metadata(_provider_key(provider), bucket, key)
+        log_activity(
+            type="info",
+            title="Object Deleted",
+            description=(
+                f"Deleted object '{key}' from bucket '{bucket}' "
+                f"on connection '{_provider_key(provider)}'."
+            ),
+        )
     except (BotoCoreError, ClientError) as exc:
+        log_activity(
+            type="warning",
+            title="Object Deletion Failed",
+            description=f"Failed to delete object '{key}' from bucket '{bucket}': {exc}",
+        )
         detail = f"Failed to delete object: {exc}"
         raise HTTPException(status_code=502, detail=detail) from exc
     except ValueError as exc:
@@ -241,7 +260,23 @@ def delete_prefix(
         provider = _provider_or_error(provider_id)
         result = provider.delete_prefix(bucket=bucket, prefix=normalized_prefix)
         delete_prefix_metadata(_provider_key(provider), bucket, normalized_prefix)
+        log_activity(
+            type="info",
+            title="Prefix Deleted",
+            description=(
+                f"Recursively deleted directory prefix '{normalized_prefix}' "
+                f"from bucket '{bucket}' on connection '{_provider_key(provider)}'."
+            ),
+        )
     except (BotoCoreError, ClientError) as exc:
+        log_activity(
+            type="warning",
+            title="Prefix Deletion Failed",
+            description=(
+                f"Failed to recursively delete prefix '{normalized_prefix}' "
+                f"from bucket '{bucket}': {exc}"
+            ),
+        )
         detail = f"Failed to delete prefix: {exc}"
         raise HTTPException(status_code=502, detail=detail) from exc
     except ValueError as exc:
@@ -256,35 +291,71 @@ def upload_object(
     file: Annotated[UploadFile, File(...)],
     bucket: str = Query(..., min_length=1),
     prefix: str = Query(default=""),
+    key: str | None = Query(default=None),
+    metadata: str | None = Query(default=None),
+    cache_control: str | None = Query(default=None),
     provider_id: str | None = None,
 ) -> UploadObjectResponse:
-    filename = (file.filename or "").replace("\\", "/").split("/")[-1].strip()
-    if not filename:
-        raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
-    normalized_prefix = prefix.strip("/")
-    key = f"{normalized_prefix}/{filename}" if normalized_prefix else filename
-    content_type = mimetypes.guess_type(filename)[0] or file.content_type
+    if not key:
+        filename = (file.filename or "").replace("\\", "/").split("/")[-1].strip()
+        if not filename:
+            raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
+        normalized_prefix = prefix.strip("/")
+        key = f"{normalized_prefix}/{filename}" if normalized_prefix else filename
+    content_type = mimetypes.guess_type(key)[0] or file.content_type
+
+    user_metadata = {}
+    if metadata:
+        try:
+            import json
+
+            user_metadata = json.loads(metadata)
+        except Exception:
+            pass
 
     try:
         provider = _provider_or_error(provider_id)
-        metadata = provider.upload_object(
+        metadata_res = provider.upload_object(
             bucket=bucket,
             key=key,
             file_obj=file.file,
             content_type=content_type,
+            metadata=user_metadata or None,
+            cache_control=cache_control,
         )
-        upsert_objects(_provider_key(provider), bucket, [metadata.model_dump()])
+        upsert_objects(_provider_key(provider), bucket, [metadata_res.model_dump()])
+        log_activity(
+            type="success",
+            title="File Uploaded",
+            description=(
+                f"Successfully uploaded file '{key}' to bucket '{bucket}' "
+                f"on connection '{_provider_key(provider)}'."
+            ),
+        )
     except (BotoCoreError, ClientError) as exc:
+        log_activity(
+            type="warning",
+            title="Upload Failed",
+            description=f"Failed to upload object '{key}' to bucket '{bucket}': {exc}",
+        )
         detail = f"Failed to upload object: {exc}"
         raise HTTPException(status_code=502, detail=detail) from exc
     except ValueError as exc:
+        log_activity(
+            type="error",
+            title="Upload System Error",
+            description=(
+                f"System error during upload of '{key}' "
+                f"to bucket '{bucket}': {exc}"
+            ),
+        )
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return UploadObjectResponse(
-        provider=_provider_key(provider),
         bucket=bucket,
-        indexed_at=metadata.last_modified,
-        **metadata.model_dump(),
+        provider=_provider_key(provider),
+        indexed_at=metadata_res.last_modified,
+        **metadata_res.model_dump(exclude={"bucket", "provider"}),
     )
 
 

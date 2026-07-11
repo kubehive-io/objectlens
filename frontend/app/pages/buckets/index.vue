@@ -83,7 +83,7 @@ function formatDate(value?: string | null) {
     <header class="page-title-section">
       <div class="header-text-block">
         <h1>Global Buckets</h1>
-        <p class="subtitle">Unified catalog of all discoverable buckets across your active S3, Ceph, and Garage providers.</p>
+        <p class="subtitle">Unified catalog of all discoverable buckets across your active Ceph, Garage, and other object storage providers.</p>
       </div>
       <div class="header-actions">
         <NuxtLink to="/settings" class="btn btn-secondary flex-center">

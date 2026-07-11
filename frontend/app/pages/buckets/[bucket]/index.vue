@@ -331,10 +331,12 @@ async function openUpload(files?: FileList) {
   if (files && files.length > 0) {
     uploadQueue.setFiles(files);
     await router.push({
-      path: providerId.value
-        ? `/providers/${encodeURIComponent(providerId.value)}/buckets/${encodeURIComponent(bucket.value)}/upload`
-        : `/buckets/${encodeURIComponent(bucket.value)}/upload`,
-      query: currentPrefix.value ? { prefix: currentPrefix.value } : {},
+      path: "/upload",
+      query: {
+        bucket: bucket.value,
+        ...(providerId.value ? { provider: providerId.value } : {}),
+        ...(currentPrefix.value ? { prefix: currentPrefix.value } : {}),
+      },
     });
   } else {
     fileInputRef.value?.click();
@@ -562,7 +564,7 @@ onMounted(() => {
           <h1>{{ bucket }}</h1>
         </div>
         <p class="subtitle">
-          Provider: {{ provider?.name || provider?.display_name || providerId || "default" }} · Browsing automatically indexes S3 metadata.
+          Provider: {{ provider?.name || provider?.display_name || providerId || "default" }} · Browsing automatically indexes object metadata.
         </p>
       </div>
       <div class="header-actions">
@@ -593,10 +595,10 @@ onMounted(() => {
           <Server :size="16" class="metric-icon muted" />
         </div>
         <div class="metric-content">
-          <strong class="text-ellipsis" :title="provider?.display_name || summary?.provider || details?.provider || 'S3 Host'">
-            {{ provider?.display_name || summary?.provider || details?.provider || "S3 Host" }}
+          <strong class="text-ellipsis" :title="provider?.display_name || summary?.provider || details?.provider || 'Storage Host'">
+            {{ provider?.display_name || summary?.provider || details?.provider || "Storage Host" }}
           </strong>
-          <span class="metric-trend">{{ provider?.type || "s3" }}</span>
+          <span class="metric-trend">{{ provider?.type || "object" }}</span>
         </div>
         <p class="metric-caption text-ellipsis" :title="provider?.endpoint_url || 'Endpoint not configured'">
           {{ provider?.endpoint_url || "Endpoint not configured" }}

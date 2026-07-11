@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import init_db
-from .routers import buckets, health, index, objects, provider
+from .routers import activity, buckets, health, index, objects, provider
 
 settings = get_settings()
 
@@ -34,3 +34,4 @@ app.include_router(buckets.router)
 app.include_router(objects.router)
 app.include_router(index.router)
 app.include_router(provider.router)
+app.include_router(activity.router)

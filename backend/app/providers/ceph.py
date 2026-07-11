@@ -289,8 +289,17 @@ class CephObjectStorageProvider(ObjectStorageProvider):
         key: str,
         file_obj,
         content_type: str | None = None,
+        metadata: dict[str, str] | None = None,
+        cache_control: str | None = None,
     ) -> ObjectInfo:
-        extra_args = {"ContentType": content_type} if content_type else None
+        extra_args = {}
+        if content_type:
+            extra_args["ContentType"] = content_type
+        if cache_control:
+            extra_args["CacheControl"] = cache_control
+        if metadata:
+            extra_args["Metadata"] = metadata
+
         if extra_args:
             self._client.upload_fileobj(file_obj, bucket, key, ExtraArgs=extra_args)
         else:

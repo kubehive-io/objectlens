@@ -111,7 +111,7 @@ onMounted(async () => {
     <header class="page-title-section">
       <div class="header-text-block">
         <h1>Storage Providers</h1>
-        <p class="subtitle">Register, monitor, and explore S3-compatible, Ceph RGW, and Garage endpoints.</p>
+        <p class="subtitle">Register, monitor, and explore Ceph RGW, Garage, and other object storage endpoints.</p>
       </div>
       <div class="header-actions">
         <NuxtLink to="/settings" class="btn btn-secondary flex-center">
@@ -192,7 +192,7 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
             <Activity :size="16" class="metric-icon muted" />
           </div>
           <div class="metric-content">
-            <strong>S3 / Ceph</strong>
+            <strong>Object / Ceph</strong>
             <span class="metric-trend success">Multi-cloud</span>
           </div>
           <p class="metric-caption">Unified access layer for multiple RGW backends.</p>
@@ -293,8 +293,8 @@ cp example/providers/*.yaml backend/data/providers/</code></pre>
                 <dl class="provider-card-meta-list">
                   <div class="meta-row">
                     <dt><Globe :size="12" /> Endpoint URL</dt>
-                    <dd :title="provider.endpoint_url || 'AWS S3 Edge'">
-                      <code>{{ provider.endpoint_url || "AWS S3 Edge" }}</code>
+                    <dd :title="provider.endpoint_url || 'Cloud Storage Edge'">
+                      <code>{{ provider.endpoint_url || "Cloud Storage Edge" }}</code>
                     </dd>
                   </div>
                   <div class="meta-row" v-if="provider.region">

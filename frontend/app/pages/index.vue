@@ -152,7 +152,7 @@ onMounted(async () => {
               <h3 class="margin-0">Global Buckets Catalog</h3>
             </div>
             <p class="description mt-12">
-              Browse, filter, search, and upload files to S3, Ceph RGW, or Garage containers from a single unified list.
+              Browse, filter, search, and upload files to Ceph RGW, Garage, or other object storage containers from a single unified list.
             </p>
           </div>
           <div class="card-actions-footer">
@@ -174,7 +174,7 @@ onMounted(async () => {
               <h3 class="margin-0">Storage Providers</h3>
             </div>
             <p class="description mt-12">
-              Monitor provider latency, list registered connections, and explore metadata indexes for Ceph and S3.
+              Monitor provider latency, list registered connections, and explore metadata indexes for Ceph, Garage, and other endpoints.
             </p>
           </div>
           <div class="card-actions-footer">

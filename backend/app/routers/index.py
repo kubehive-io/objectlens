@@ -2,7 +2,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, HTTPException, Query
 
 from ..config import get_settings
-from ..db import upsert_objects
+from ..db import log_activity, upsert_objects
 from ..models import ScanResponse
 from ..providers import get_provider, get_provider_by_id
 
@@ -39,9 +39,31 @@ def scan_provider_bucket(
             if not result.next_continuation_token:
                 break
             continuation_token = result.next_continuation_token
+
+        log_activity(
+            type="success",
+            title="Bucket Metadata Indexed",
+            description=(
+                f"Scanned connection '{provider_key}' bucket '{bucket}' "
+                f"and indexed {indexed} object records successfully."
+            ),
+        )
     except (BotoCoreError, ClientError) as exc:
+        log_activity(
+            type="warning",
+            title="Bucket Sync Failed",
+            description=(
+                f"Scan failed on connection '{provider_id or 'default'}' "
+                f"bucket '{bucket}': {exc}"
+            ),
+        )
         raise HTTPException(status_code=502, detail=f"Failed to scan bucket: {exc}") from exc
     except ValueError as exc:
+        log_activity(
+            type="error",
+            title="Bucket Sync System Error",
+            description=f"System error during scan of bucket '{bucket}': {exc}",
+        )
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     # TODO: Move synchronous scan work to a background worker.

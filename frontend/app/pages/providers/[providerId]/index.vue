@@ -68,7 +68,7 @@ onMounted(async () => {
           <Server v-else :size="24" class="text-accent" />
           <h1>{{ provider?.name || providerId }}</h1>
         </div>
-        <p class="subtitle">{{ provider?.description || `${provider?.display_name || 'S3 Endpoint'} · ${provider?.region || 'us-east-1'}` }}</p>
+        <p class="subtitle">{{ provider?.description || `${provider?.display_name || 'Storage Endpoint'} · ${provider?.region || 'us-east-1'}` }}</p>
       </div>
       <div class="header-actions">
         <NuxtLink class="btn btn-secondary flex-center" :to="`/providers/${encodeURIComponent(providerId)}/details`">
@@ -102,11 +102,11 @@ onMounted(async () => {
             <Server :size="16" class="metric-icon muted" />
           </div>
           <div class="metric-content">
-            <strong class="uppercase-text">{{ provider?.type || "s3" }}</strong>
+            <strong class="uppercase-text">{{ provider?.type || "object" }}</strong>
             <span class="metric-trend">{{ provider?.region }}</span>
           </div>
-          <p class="metric-caption text-ellipsis" :title="provider?.endpoint_url || 'AWS S3 Global Endpoint'">
-            {{ provider?.endpoint_url || "AWS S3 Global Endpoint" }}
+          <p class="metric-caption text-ellipsis" :title="provider?.endpoint_url || 'Global Storage Endpoint'">
+            {{ provider?.endpoint_url || "Global Storage Endpoint" }}
           </p>
         </article>
 
@@ -158,7 +158,7 @@ onMounted(async () => {
         <div v-else-if="buckets.length === 0" class="empty-dashboard-state">
           <FolderOpen :size="48" class="muted" />
           <h3>No Buckets Discovered</h3>
-          <p>This S3 connection returned 0 visible buckets. Try creating a bucket using your provider console or Settings.</p>
+          <p>This storage connection returned 0 visible buckets. Try creating a bucket using your provider console or Settings.</p>
         </div>
 
         <div v-else class="bucket-grid">
@@ -180,7 +180,7 @@ onMounted(async () => {
                 <FolderOpen :size="18" class="text-accent flex-shrink-0" />
                 <h3>{{ bucket.name }}</h3>
               </div>
-              <p class="description">{{ provider?.description || "Active S3 bucket. Explore folders, files, and edit metadata indices." }}</p>
+              <p class="description">{{ provider?.description || "Active storage bucket. Explore folders, files, and edit metadata indices." }}</p>
               <div class="connection-meta">
                 <span class="endpoint"><Calendar :size="11" /> Created: {{ formatDate(bucket.creation_date) }}</span>
               </div>

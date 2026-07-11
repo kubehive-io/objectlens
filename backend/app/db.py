@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Any
@@ -62,6 +63,17 @@ object_prefixes = Table(
     Column("name", String, nullable=False),
     Column("object_count", Integer, nullable=False, default=0),
     Column("indexed_at", DateTime(timezone=True), nullable=False),
+)
+
+activity_log = Table(
+    "activity_log",
+    metadata,
+    Column("id", String, primary_key=True),
+    Column("type", String, nullable=False),  # 'success', 'warning', 'info', 'error'
+    Column("title", String, nullable=False),
+    Column("description", String, nullable=False),
+    Column("timestamp", DateTime(timezone=True), nullable=False),
+    Column("duration", String),
 )
 
 Index("ix_object_metadata_provider_bucket", object_metadata.c.provider, object_metadata.c.bucket)
@@ -462,3 +474,36 @@ def top_prefixes(provider: str, bucket: str, limit: int = 10) -> list[dict[str, 
         key=lambda item: (item["object_count"], item["total_size"], item["prefix"]),
         reverse=True,
     )[:limit]
+
+
+def log_activity(type: str, title: str, description: str, duration: str | None = None) -> str:
+    log_id = f"log-{uuid.uuid4()}"
+    row = {
+        "id": log_id,
+        "type": type,
+        "title": title,
+        "description": description,
+        "timestamp": datetime.now(UTC),
+        "duration": duration,
+    }
+    statement = activity_log.insert().values(row)
+    with get_engine().begin() as conn:
+        conn.execute(statement)
+    return log_id
+
+
+def list_activities(limit: int = 50) -> list[dict[str, Any]]:
+    statement = select(activity_log).order_by(desc(activity_log.c.timestamp)).limit(limit)
+    with get_engine().connect() as conn:
+        result = conn.execute(statement)
+        return [
+            {
+                "id": row.id,
+                "type": row.type,
+                "title": row.title,
+                "description": row.description,
+                "timestamp": row.timestamp.isoformat() if row.timestamp else None,
+                "duration": row.duration,
+            }
+            for row in result
+        ]

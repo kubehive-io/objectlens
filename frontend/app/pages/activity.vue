@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useObjectLensApi } from "../composables/useObjectLensApi";
+import { useObjectLensApi, type ActivityLog } from "../composables/useObjectLensApi";
 import {
   Activity,
   CheckCircle2,
@@ -21,63 +21,38 @@ const syncTime = ref("0.12s");
 const dbSize = ref("2.4 MB");
 const totalSyncedCount = ref(0);
 
-interface ActivityLog {
-  id: string;
-  type: "success" | "warning" | "info" | "syncing";
-  title: string;
-  description: string;
-  timestamp: string;
-  duration?: string;
+const activityLogs = ref<ActivityLog[]>([]);
+
+function formatLogTime(isoString: string) {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  return date.toLocaleDateString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-const activityLogs = ref<ActivityLog[]>([
-  {
-    id: "log-1",
-    type: "success",
-    title: "Bucket metadata index refreshed",
-    description: "Successfully rescanned object catalog in ceph-homelab bucket: 'images'. Indexed 24 files.",
-    timestamp: "2 mins ago",
-    duration: "420ms"
-  },
-  {
-    id: "log-2",
-    type: "success",
-    title: "S3 Connection verified",
-    description: "Ping completed successfully to AWS Production region 'eu-west-1'. Access key authorized.",
-    timestamp: "12 mins ago",
-    duration: "115ms"
-  },
-  {
-    id: "log-3",
-    type: "info",
-    title: "Local database SQLite compacted",
-    description: "VACUUM clean run on database backend/data/objectlens.db to optimize space and reindex tree.",
-    timestamp: "1 hour ago",
-    duration: "1.2s"
-  },
-  {
-    id: "log-4",
-    type: "warning",
-    title: "Slow RGW response detected",
-    description: "Gateway response exceeded threshold (500ms) on 'garage-local' container check. Latency: 580ms.",
-    timestamp: "3 hours ago",
-    duration: "580ms"
-  },
-  {
-    id: "log-5",
-    type: "success",
-    title: "Upload queue processed successfully",
-    description: "Uploaded 4 files (total size 45MB) to bucket 'backups/images/' on 'ceph-homelab'.",
-    timestamp: "Yesterday",
-    duration: "4.5s"
-  }
-]);
-
 onMounted(async () => {
+  await refreshAllMetrics();
+});
+
+async function refreshAllMetrics() {
   loading.value = true;
   try {
     const health = await api.health();
     backendHealthy.value = health.status === "ok";
+    
+    // Fetch real activity logs from SQLite!
+    try {
+      activityLogs.value = await api.listActivities(25);
+    } catch (err) {
+      console.error("Failed to fetch real operation logs:", err);
+    }
     
     // Calculate total indexed objects dynamically to display real metrics!
     const providers = await api.listProviders();
@@ -93,13 +68,13 @@ onMounted(async () => {
         }
       } catch {}
     }
-    totalSyncedCount.value = totalObjects || 24; // fallback to showcase if 0
+    totalSyncedCount.value = totalObjects;
   } catch (err) {
     console.error("Failed to gather activity health metrics:", err);
   } finally {
     loading.value = false;
   }
-});
+}
 </script>
 
 <template>
@@ -108,11 +83,11 @@ onMounted(async () => {
     <header class="page-title-section">
       <div class="header-text-block">
         <h1>Activity & Operations</h1>
-        <p class="subtitle">Monitor active metadata synchronization, S3 background operations, and query latencies.</p>
+        <p class="subtitle">Monitor active metadata synchronization, background operations, and query latencies.</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary flex-center" type="button" @click="onMounted">
-          <RefreshCw :size="16" />
+        <button class="btn btn-secondary flex-center" type="button" @click="refreshAllMetrics">
+          <RefreshCw :size="16" :class="{ spin: loading }" />
           <span>Refresh Metrics</span>
         </button>
       </div>
@@ -162,19 +137,20 @@ onMounted(async () => {
 
     <!-- Operations Timeline -->
     <section class="dashboard-content-block">
-      <div class="block-header">
+      <div class="block-header border-bottom pb-12 mb-24">
         <div>
           <h2>Operations Timeline</h2>
-          <p>Real-time audit log of storage events, file uploads, and S3 endpoint checks.</p>
+          <p>Real-time audit log of storage events, file uploads, and connection endpoint checks.</p>
         </div>
       </div>
 
-      <div class="timeline-container">
+      <!-- Real timeline list -->
+      <div v-if="activityLogs.length > 0" class="timeline-container">
         <div v-for="log in activityLogs" :key="log.id" class="timeline-item">
           <!-- Left side icon indicator -->
           <div class="timeline-badge" :class="log.type">
             <CheckCircle2 v-if="log.type === 'success'" :size="14" />
-            <AlertTriangle v-else-if="log.type === 'warning'" :size="14" />
+            <AlertTriangle v-else-if="log.type === 'warning' || log.type === 'error'" :size="14" />
             <Clock v-else :size="14" />
           </div>
 
@@ -182,7 +158,7 @@ onMounted(async () => {
           <div class="timeline-content-body">
             <div class="timeline-title-row">
               <h4>{{ log.title }}</h4>
-              <span class="timeline-time">{{ log.timestamp }}</span>
+              <span class="timeline-time">{{ formatLogTime(log.timestamp) }}</span>
             </div>
             <p class="timeline-desc">{{ log.description }}</p>
           </div>
@@ -192,6 +168,13 @@ onMounted(async () => {
             <span class="duration-pill">{{ log.duration }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- Real DB Empty State -->
+      <div v-else class="empty-dashboard-state-v2">
+        <Activity :size="44" class="text-accent" />
+        <h3>No Activities Logged Yet</h3>
+        <p>Trigger a metadata index scan or upload files to see real-time, database-backed operation events logged here.</p>
       </div>
     </section>
   </div>
@@ -305,5 +288,34 @@ onMounted(async () => {
   color: var(--muted-strong);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.empty-dashboard-state-v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 32px;
+  background: var(--panel);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  max-width: 600px;
+  margin: 16px auto 0 auto;
+}
+
+.empty-dashboard-state-v2 h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 16px 0 6px 0;
+}
+
+.empty-dashboard-state-v2 p {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 380px;
+  margin: 0;
+  line-height: 1.4;
 }
 </style>
