@@ -39,9 +39,9 @@ The provider layer lives in `backend/app/providers`. It defines shared types, an
 classDiagram
   class ObjectStorageProvider {
     +list_buckets()
-    +list_objects(bucket, prefix, continuation_token, limit)
-    +get_presigned_download_url(bucket, key, expires_in)
-    +get_object_metadata(bucket, key)
+    +list_objects()
+    +get_presigned_download_url()
+    +get_object_metadata()
   }
   class CephObjectStorageProvider
   ObjectStorageProvider <|-- CephObjectStorageProvider

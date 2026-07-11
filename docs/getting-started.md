@@ -31,21 +31,18 @@ docker compose -f example/docker-compose.yaml down
 # or: just docker-down
 ```
 
-### Kubernetes via Helm
+### Helm
 
-Deploy ObjectLens into your Kubernetes cluster:
+Deploy ObjectLens using the published Helm chart from GitHub Container Registry (GHCR):
 
 ```bash
-helm upgrade --install objectlens chart/ --namespace objectlens --create-namespace
-
-# Or using 'just':
-just k8s-apply
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens --namespace objectlens --create-namespace
 ```
 
-This deploys the backend and frontend to the `objectlens` namespace. Customize S3 connections by editing `chart/values.yaml` or passing variables during install:
+This deploys the backend and frontend to the `objectlens` namespace. Customize S3 connections by passing variables during installation:
 
 ```bash
-helm upgrade --install objectlens chart/ \
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens \
   --namespace objectlens \
   --create-namespace \
   --set backend.env.CEPH_S3_ENDPOINT_URL="http://your-s3-endpoint:9000" \
@@ -57,5 +54,4 @@ To delete the deployment:
 
 ```bash
 helm uninstall objectlens --namespace objectlens
-# or: just k8s-delete
 ```

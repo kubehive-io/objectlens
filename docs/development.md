@@ -91,6 +91,38 @@ npm run dev
 npm run build
 ```
 
+## Kubernetes & Helm (Local Testing)
+
+To test the Helm chart deployment locally with your in-development files:
+
+```bash
+# Apply local Helm chart
+helm upgrade --install objectlens chart/ --namespace objectlens --create-namespace
+
+# Or using the 'just' shortcut:
+just k8s-apply
+```
+
+This deploys the backend and frontend services directly from the local `chart/` directory.
+
+To customize local Helm variables (e.g. override defaults):
+
+```bash
+helm upgrade --install objectlens chart/ \
+  --namespace objectlens \
+  --create-namespace \
+  --set backend.env.CEPH_S3_ENDPOINT_URL="http://your-s3-endpoint:9000"
+```
+
+To clean up and uninstall the local release:
+
+```bash
+helm uninstall objectlens --namespace objectlens
+
+# Or using the 'just' shortcut:
+just k8s-delete
+```
+
 ## Documentation
 
 Serve docs locally:
