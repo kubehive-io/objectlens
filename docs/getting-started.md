@@ -1,53 +1,61 @@
 # Getting Started
 
-## Requirements
+The quickest way to run ObjectLens is using containerized environments. Run it locally using Docker or Podman, or deploy it to a Kubernetes cluster using the Helm chart.
 
-Install only:
+## Quick Start
 
-- Git
-- Devbox
+### Docker or Podman Compose
 
-Devbox provides Python, uv, Node.js, Just, MkDocs, and the other local tools used by the project.
-
-## Run Locally
+Run the entire stack locally with MinIO acting as a mock S3 storage backend:
 
 ```bash
-git clone <repo>
-cd objectlens
+# Using Docker Compose
+docker compose -f example/docker-compose.yaml up --build
 
-devbox shell
-cp example/.env.example .env
-just install
-just dev
+# Using Podman Compose
+podman compose -f example/docker-compose.yaml up --build
+
+# Or if you have 'just' installed (automatically detects podman/docker):
+just docker-up
 ```
 
-Open:
+This starts:
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8000`
+- **MinIO Console**: `http://localhost:9001` (login with `minioadmin` / `minioadmin`)
 
-```text
-Frontend: http://localhost:3000
-Backend Swagger: http://localhost:8000/docs
-```
-
-## One Command
-
-After dependencies are installed, you can also run:
+To stop all services:
 
 ```bash
-devbox run dev
+docker compose -f example/docker-compose.yaml down
+# or: just docker-down
 ```
 
-## Local Ceph-Compatible Endpoint
+### Kubernetes via Helm
 
-The default `example/.env.example` points at a local S3-compatible endpoint:
+Deploy ObjectLens into your Kubernetes cluster:
 
-```env
-OBJECTLENS_PROVIDER=ceph
-CEPH_S3_ENDPOINT_URL=http://localhost:9000
-CEPH_S3_REGION=us-east-1
-CEPH_S3_ACCESS_KEY_ID=minioadmin
-CEPH_S3_SECRET_ACCESS_KEY=minioadmin
-CEPH_S3_DEFAULT_BUCKET=objectlens-demo
-CEPH_S3_VERIFY_SSL=false
+```bash
+helm upgrade --install objectlens chart/ --namespace objectlens --create-namespace
+
+# Or using 'just':
+just k8s-apply
 ```
 
-For Docker Compose, this endpoint is provided by MinIO so the Ceph provider can be exercised without a real Ceph cluster.
+This deploys the backend and frontend to the `objectlens` namespace. Customize S3 connections by editing `chart/values.yaml` or passing variables during install:
+
+```bash
+helm upgrade --install objectlens chart/ \
+  --namespace objectlens \
+  --create-namespace \
+  --set backend.env.CEPH_S3_ENDPOINT_URL="http://your-s3-endpoint:9000" \
+  --set backend.env.CEPH_S3_ACCESS_KEY_ID="your-access-key" \
+  --set backend.env.CEPH_S3_SECRET_ACCESS_KEY="your-secret-key"
+```
+
+To delete the deployment:
+
+```bash
+helm uninstall objectlens --namespace objectlens
+# or: just k8s-delete
+```

@@ -1,37 +1,94 @@
 # Development
 
-## Local Workflow
+This guide covers local development setup, workflow, and instructions for contributing to ObjectLens.
+
+## Requirements
+
+Install only:
+
+- Git
+- Devbox
+
+Devbox provides Python, uv, Node.js, Just, MkDocs, and other local tools used by the project.
+
+## Local Setup & Workflow
+
+To set up your local development environment:
 
 ```bash
+git clone <repo>
+cd objectlens
+
 devbox shell
 cp example/.env.example .env
 just install
 just dev
 ```
 
-The frontend runs at:
+Open:
+- **Frontend**: `http://localhost:3000`
+- **Backend Swagger UI**: `http://localhost:8000/docs`
 
-```text
-http://localhost:3000
+After dependencies are installed, you can also run the dev environment using a single command:
+
+```bash
+devbox run dev
 ```
 
-The backend Swagger UI runs at:
+## Local S3-Compatible Endpoint
 
-```text
-http://localhost:8000/docs
+The default `example/.env.example` points at a local S3-compatible endpoint (MinIO):
+
+```env
+OBJECTLENS_PROVIDER=ceph
+CEPH_S3_ENDPOINT_URL=http://localhost:9000
+CEPH_S3_REGION=us-east-1
+CEPH_S3_ACCESS_KEY_ID=minioadmin
+CEPH_S3_SECRET_ACCESS_KEY=minioadmin
+CEPH_S3_DEFAULT_BUCKET=objectlens-demo
+CEPH_S3_VERIFY_SSL=false
 ```
+
+For local development, you can spin up this MinIO service by running the Docker Compose stack (or via the shortcuts below).
+
+---
 
 ## Commands
 
+We use `just` for orchestrating development commands:
+
 ```bash
-just install
-just backend
-just frontend
-just dev
-just lint
-just format
-just test
-just clean
+just install       # Install frontend and backend dependencies
+just dev           # Run frontend and backend servers concurrently
+just backend       # Run the FastAPI backend only
+just frontend      # Run the Nuxt frontend only
+just lint          # Run ruff and frontend typechecks
+just format        # Format Python and frontend code
+just test          # Run backend unit and integration tests
+just clean         # Clean up build/package artifacts
+```
+
+## Manual Sub-Project Commands
+
+### Backend
+
+```bash
+cd backend
+uv sync
+uv run uvicorn app.main:app --reload
+uv run ruff check .
+uv run pytest
+```
+
+### Frontend
+
+The Nuxt 4 app lives under `frontend/app`.
+
+```bash
+cd frontend
+npm install
+npm run dev
+npm run build
 ```
 
 ## Documentation
@@ -42,35 +99,10 @@ Serve docs locally:
 just docs
 ```
 
-Open:
-
-```text
-http://localhost:8080
-```
+Open: `http://localhost:8080`
 
 Build docs strictly:
 
 ```bash
 just docs-build
 ```
-
-## Backend
-
-```bash
-cd backend
-uv sync
-uv run uvicorn app.main:app --reload
-uv run ruff check .
-uv run pytest
-```
-
-## Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-npm run build
-```
-
-The Nuxt 4 app lives under `frontend/app`.
