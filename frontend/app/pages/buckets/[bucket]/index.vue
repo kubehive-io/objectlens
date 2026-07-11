@@ -7,9 +7,9 @@ import type {
   OperationSummary,
   ProviderConnection,
   ProviderInfo,
-} from "../../composables/useObjectLensApi";
-import { useObjectLensApi } from "../../composables/useObjectLensApi";
-import { useUploadQueue } from "../../composables/useUploadQueue";
+} from "../../../composables/useObjectLensApi";
+import { useObjectLensApi } from "../../../composables/useObjectLensApi";
+import { useUploadQueue } from "../../../composables/useUploadQueue";
 
 import {
   Eye,
@@ -318,14 +318,27 @@ async function downloadObject(item: BucketBrowserItem) {
   }
 }
 
+const fileInputRef = ref<HTMLInputElement | null>(null);
+
+function handleFilePickerChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    void openUpload(target.files);
+  }
+}
+
 async function openUpload(files?: FileList) {
-  if (files) uploadQueue.setFiles(files);
-  await router.push({
-    path: providerId.value
-      ? `/providers/${encodeURIComponent(providerId.value)}/buckets/${encodeURIComponent(bucket.value)}/upload`
-      : `/buckets/${encodeURIComponent(bucket.value)}/upload`,
-    query: currentPrefix.value ? { prefix: currentPrefix.value } : {},
-  });
+  if (files && files.length > 0) {
+    uploadQueue.setFiles(files);
+    await router.push({
+      path: providerId.value
+        ? `/providers/${encodeURIComponent(providerId.value)}/buckets/${encodeURIComponent(bucket.value)}/upload`
+        : `/buckets/${encodeURIComponent(bucket.value)}/upload`,
+      query: currentPrefix.value ? { prefix: currentPrefix.value } : {},
+    });
+  } else {
+    fileInputRef.value?.click();
+  }
 }
 
 function handleDragEnter(event: DragEvent) {
@@ -617,6 +630,15 @@ onMounted(() => {
         <p class="metric-caption">Prefix auto-sync on directory access is enabled.</p>
       </article>
     </section>
+
+    <!-- Hidden native file picker trigger -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      class="visually-hidden"
+      @change="handleFilePickerChange"
+    />
 
     <section class="toolbar">
       <div class="toolbar-search-box">
