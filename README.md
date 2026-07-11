@@ -1,5 +1,11 @@
 # ObjectLens
 
+<p align="center">
+  <img src="images/objectlens-logo.png" alt="ObjectLens Banner" />
+</p>
+
+![Project State: MVP](https://img.shields.io/badge/project--state-MVP-blue)
+
 ObjectLens is a Kubernetes-native object storage interface for fast access to Ceph RGW and S3-compatible object data.
 
 ObjectLens is documented with MkDocs Material.
@@ -13,7 +19,7 @@ ObjectLens is documented with MkDocs Material.
 
 ### Navigation & Search
 - **S3-Style Pathing**: Native folder/prefix browsing.
-- **Search Capabilities**: Supports scoped prefix searches, glob-style matching, and fast indexed search.
+- **Advanced Global Search**: Features an interactive 3-column workspace masonry grid overview, dynamic file-type color-coded extension badges, formatted file sizes, and `/` and `Escape` keyboard shortcuts.
 - **Detailed Insights**: Paginated bucket browsing complete with indexed storage statistics.
 
 ### Previews & Actions
@@ -24,7 +30,12 @@ ObjectLens is documented with MkDocs Material.
 
 ### Uploads & Batch Actions
 - **Drag-and-Drop**: Easy uploading coupled with a dedicated verification/review queue and progress tracking.
+- **Visual Card Wizards**: Symmetrical visual-card step wizards for selecting storage connections and bucket destinations smoothly.
 - **Multi-Selection**: Multi-row selection to process operations on multiple items simultaneously.
+
+### Operations & Audit Logs
+- **DB-Backed Auditing**: Real, persistent SQLite `activity_log` tracking of bucket indexing, file uploads, file deletions, and prefix directory deletions.
+- **Operations Timeline**: Beautiful paginated audit log timeline supporting default 50-event pages and relative, human-friendly date formatting.
 
 ### Interface
 - **Dynamic Theming**: Easily switch between light, dark, and system-matched theme modes.
