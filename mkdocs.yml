@@ -4,7 +4,10 @@ site_url: https://example.com/objectlens
 
 theme:
   name: material
+  logo: images/logo.png
   features:
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
     - navigation.top
@@ -18,24 +21,31 @@ theme:
       accent: cyan
 
 nav:
-  - Home: index.md
-  - Getting Started: getting-started.md
-  - Architecture: architecture.md
-  - Provider Model: provider-model.md
-  - Multi-Provider: multi-provider.md
-  - Provider Settings: provider-settings.md
-  - Bucket Details: bucket-details.md
-  - Ceph Provider: ceph-provider.md
-  - Garage Provider: garage-provider.md
-  - Roadmap: roadmap.md
-  - Development: development.md
-  - Decisions:
-      - Provider Abstraction: decisions/0001-provider-abstraction.md
+  - Overview:
+      - Home: index.md
+      - Getting Started: getting-started.md
+      - Roadmap: roadmap.md
+  - Architecture & Design:
+      - System Overview: architecture.md
+      - Provider Model: provider-model.md
+      - Multi-Provider: multi-provider.md
+      - Decisions (Provider Abstraction): decisions/0001-provider-abstraction.md
+  - Features & Settings:
+      - S3 Connection Settings: provider-settings.md
+      - Bucket Insights: bucket-details.md
+      - Ceph RGW: ceph-provider.md
+      - Garage S3: garage-provider.md
+  - Development:
+      - Guide: development.md
 
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.highlight
