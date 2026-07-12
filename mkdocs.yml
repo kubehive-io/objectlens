@@ -62,7 +62,7 @@ nav:
       - Bucket Insights: bucket-details.md
       - Ceph RGW: ceph-provider.md
       - Garage S3: garage-provider.md
-  - Development:
+  - Developer Guide:
       - Guide: development.md
 
 markdown_extensions:
