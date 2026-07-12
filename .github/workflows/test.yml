@@ -4,15 +4,47 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - 'backend/**'
-      - '.github/workflows/test.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  validate-chart-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify Chart version is bumped
+        run: |
+          PR_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          PR_APP_VERSION=$(grep '^appVersion:' chart/Chart.yaml | awk '{print $2}' | tr -d '"')
+          
+          git fetch origin main --depth=1
+          git show origin/main:chart/Chart.yaml > /tmp/Chart-main.yaml
+          
+          MAIN_VERSION=$(grep '^version:' /tmp/Chart-main.yaml | awk '{print $2}')
+          MAIN_APP_VERSION=$(grep '^appVersion:' /tmp/Chart-main.yaml | awk '{print $2}' | tr -d '"')
+          
+          echo "PR Chart Version:   ${PR_VERSION}"
+          echo "PR App Version:     ${PR_APP_VERSION}"
+          echo "Main Chart Version: ${MAIN_VERSION}"
+          echo "Main App Version:   ${MAIN_APP_VERSION}"
+          
+          if [[ "${PR_VERSION}" == "${MAIN_VERSION}" ]]; then
+            echo "ERROR: Helm chart version (${PR_VERSION}) has not been bumped and is identical to main!"
+            exit 1
+          fi
+          
+          if [[ "${PR_APP_VERSION}" == "${MAIN_APP_VERSION}" ]]; then
+            echo "INFO: appVersion (${PR_APP_VERSION}) is identical to main (this is allowed)."
+          fi
+          
+          echo "SUCCESS: Chart version validation passed!"
+
   test:
     runs-on: ubuntu-latest
     steps:
