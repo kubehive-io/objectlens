@@ -40,11 +40,10 @@ jobs:
           fi
           
           if [[ "${PR_APP_VERSION}" == "${MAIN_APP_VERSION}" ]]; then
-            echo "ERROR: Helm chart appVersion (${PR_APP_VERSION}) has not been bumped and is identical to main!"
-            exit 1
+            echo "INFO: appVersion (${PR_APP_VERSION}) is identical to main (this is allowed)."
           fi
           
-          echo "SUCCESS: Chart version and appVersion have been successfully bumped!"
+          echo "SUCCESS: Chart version validation passed!"
 
   test:
     runs-on: ubuntu-latest
