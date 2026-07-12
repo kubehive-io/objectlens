@@ -162,14 +162,17 @@ jobs:
 
       - name: Package and Push Helm Chart
         run: |
-          CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
-          echo "Discovered Chart Name: ${CHART_NAME}"
+          # Dynamically modify name inside Chart.yaml just for the package step
+          sed -i 's/^name: .*/name: helm-chart/' chart/Chart.yaml
+          
+          CHART_NAME="helm-chart"
+          echo "Packaging under Name: ${CHART_NAME}"
           
           # Package the chart
           helm package chart/ --version "${{ steps.version.outputs.value }}" --destination .
           
           # Push the generated package
-          helm push "${CHART_NAME}-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}"
+          helm push "${CHART_NAME}-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}/objectlens"
 
       - name: Cancel Workflow on Failure
         if: failure()
@@ -211,7 +214,7 @@ jobs:
         run: |
           OWNER="${{ steps.owner.outputs.name }}"
           TAG="${{ steps.version.outputs.tag }}"
-          CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
+          CHART_NAME="helm-chart"
           
           echo "=================================================="
           echo "🎉 SUCCESS: All packages published successfully!"
@@ -220,7 +223,7 @@ jobs:
           echo "🚀 Artifacts published:"
           echo "   - Container Service:  ghcr.io/${OWNER}/service:${TAG}"
           echo "   - Container Web UI:   ghcr.io/${OWNER}/web-ui:${TAG}"
-          echo "   - Helm Chart OCI:     oci://ghcr.io/${OWNER}/${CHART_NAME}:${TAG}"
+          echo "   - Helm Chart OCI:     oci://ghcr.io/${OWNER}/objectlens/${CHART_NAME}:${TAG}"
           echo "=================================================="
 
   cleanup-on-failure:
@@ -262,8 +265,12 @@ jobs:
             local owner=$3
             echo "Checking package: ${package}:${tag}..."
             
+            # URL encode the package name to handle slashes correctly in GHCR REST API
+            local encoded_package
+            encoded_package=$(echo -n "${package}" | jq -sRr @uri)
+            
             local versions_json
-            versions_json=$(gh api "/orgs/${owner}/packages/container/${package}/versions" 2>/dev/null || gh api "/users/${owner}/packages/container/${package}/versions" 2>/dev/null || echo "[]")
+            versions_json=$(gh api "/orgs/${owner}/packages/container/${encoded_package}/versions" 2>/dev/null || gh api "/users/${owner}/packages/container/${encoded_package}/versions" 2>/dev/null || echo "[]")
             
             if [[ "${versions_json}" == "[]" ]]; then
               echo "No versions found for ${package}."
@@ -275,8 +282,8 @@ jobs:
             
             if [[ -n "${version_id}" && "${version_id}" != "null" ]]; then
               echo "Found version ID ${version_id} for tag ${tag}. Deleting..."
-              gh api --method DELETE "/orgs/${owner}/packages/container/${package}/versions/${version_id}" 2>/dev/null || \
-              gh api --method DELETE "/users/${owner}/packages/container/${package}/versions/${version_id}" 2>/dev/null || \
+              gh api --method DELETE "/orgs/${owner}/packages/container/${encoded_package}/versions/${version_id}" 2>/dev/null || \
+              gh api --method DELETE "/users/${owner}/packages/container/${encoded_package}/versions/${version_id}" 2>/dev/null || \
               echo "Failed to delete package version."
               echo "Successfully deleted ${package}:${tag}."
             else
@@ -289,4 +296,6 @@ jobs:
           
           cleanup_package "service" "${TAG}" "${OWNER}"
           cleanup_package "web-ui" "${TAG}" "${OWNER}"
+          cleanup_package "objectlens/helm-chart" "${TAG}" "${OWNER}"
+          cleanup_package "helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "${CHART_NAME}" "${TAG}" "${OWNER}"
