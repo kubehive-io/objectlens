@@ -40,6 +40,12 @@ ObjectLens is a Kubernetes-native object storage interface for fast access to Ce
 - **Granular RBAC Enforcements**: Separates `viewer` (read-only list, search, download, preview) and `admin` (write, upload, recursive delete, move, scan) privileges.
 - **HTTP Basic Auth Integration**: Simple stateless S3 security configured dynamically on backend startup.
 
+### Model Context Protocol (MCP) Server
+- **Native LLM Integration**: Exposes storage connections, buckets, objects, and activity logs to any MCP-enabled AI client (like Claude Desktop, Cursor, or Gemini CLI) via stdio.
+- **Context-Aware Previews**: Allows LLMs to fetch metadata and preview object contents (supports up to 1MB of text, JSON, CSV, or code file contents) to quickly gather context.
+- **Indexed Metadata Search**: Enables LLMs to run fast search queries against local SQLite metadata indexes.
+- **On-Demand S3 Sync**: Allows LLMs to trigger S3 bucket indexing to sync metadata dynamically.
+
 ### Interface
 - **Dynamic Theming**: Easily switch between light, dark, and system-matched theme modes.
 

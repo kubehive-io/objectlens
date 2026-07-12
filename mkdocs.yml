@@ -57,7 +57,10 @@ nav:
           - Ceph RGW: ceph-provider.md
           - Garage S3: garage-provider.md
   - Telemetry: telemetry.md
-  - MCP Server: mcp-server.md
+  - MCP Server:
+      - Overview: mcp/overview.md
+      - Architecture: mcp/architecture.md
+      - Getting Started: mcp/getting-started.md
   - Developer Guide:
       - Workflow & Setup: development.md
       - Architecture & Design:

@@ -6,6 +6,7 @@ set dotenv-filename := ".env"
 install:
     cd backend && uv sync
     cd frontend && npm install
+    cd mcp-server && uv sync
 
 backend:
     cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -20,12 +21,15 @@ dev:
 lint:
     cd backend && uv run ruff check .
     cd frontend && npm run lint
+    cd mcp-server && uv run ruff check .
 
 format:
     cd backend && uv run ruff format .
+    cd mcp-server && uv run ruff format .
 
 test:
     cd backend && uv run pytest
+    cd mcp-server && uv run pytest
 
 docs:
     mkdocs serve --dev-addr 0.0.0.0:8080
