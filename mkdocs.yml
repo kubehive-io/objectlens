@@ -50,6 +50,8 @@ nav:
   - Getting Started:
       - Quick Start: getting-started.md
   - User Guide: user-guide.md
+  - Telemetry: telemetry.md
+  - MCP Server: mcp-server.md
   - Architecture & Design:
       - System Overview: architecture.md
       - Provider Model: provider-model.md
