@@ -29,10 +29,6 @@
          <lastmod>2026-07-12</lastmod>
     </url>
     <url>
-         <loc>https://example.com/objectlens/dev/mcp-server/</loc>
-         <lastmod>2026-07-12</lastmod>
-    </url>
-    <url>
          <loc>https://example.com/objectlens/dev/multi-provider/</loc>
          <lastmod>2026-07-12</lastmod>
     </url>
@@ -54,6 +50,18 @@
     </url>
     <url>
          <loc>https://example.com/objectlens/dev/decisions/0001-provider-abstraction/</loc>
+         <lastmod>2026-07-12</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/objectlens/dev/mcp/architecture/</loc>
+         <lastmod>2026-07-12</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/objectlens/dev/mcp/getting-started/</loc>
+         <lastmod>2026-07-12</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/objectlens/dev/mcp/overview/</loc>
          <lastmod>2026-07-12</lastmod>
     </url>
 </urlset>
