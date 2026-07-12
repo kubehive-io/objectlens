@@ -40,10 +40,28 @@ jobs:
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             # Use git tag stripped of leading 'v'
             VERSION="${GITHUB_REF_NAME#v}"
-            echo "Deploying release version: ${VERSION}"
-            mike deploy --branch github-doc --push --update-aliases "${VERSION}" latest
-            mike set-default --branch github-doc --push latest
+            echo "Deploying version: ${VERSION}"
+            
+            # Check if this is a pre-release/release candidate (contains -rc, -alpha, -beta, etc.)
+            if [[ "${VERSION}" =~ -rc|-alpha|-beta|-pre|rc|alpha|beta ]]; then
+              echo "Pre-release/RC detected. Deploying version without updating 'latest' alias."
+              mike deploy --branch github-doc --push "${VERSION}"
+            else
+              echo "Stable release detected. Deploying and updating 'latest' alias."
+              mike deploy --branch github-doc --push --update-aliases "${VERSION}" latest
+              mike set-default --branch github-doc --push latest
+            fi
           else
             echo "Deploying dev version"
             mike deploy --branch github-doc --push dev
+            
+            # Ensure a default redirect is set so root / redirects correctly
+            # If 'latest' exists, set default to 'latest'. If not, set default to 'dev'.
+            if mike list -b github-doc 2>/dev/null | grep -q "latest"; then
+              echo "Setting default redirect to latest"
+              mike set-default --branch github-doc --push latest
+            else
+              echo "latest alias not found. Setting default redirect to dev"
+              mike set-default --branch github-doc --push dev
+            fi
           fi
