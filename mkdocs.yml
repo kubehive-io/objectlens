@@ -49,21 +49,22 @@ nav:
   - Home: index.md
   - Getting Started:
       - Quick Start: getting-started.md
-  - User Guide: user-guide.md
+  - User Guide:
+      - Overview: user-guide.md
+      - Features & Settings:
+          - S3 Connection Settings: provider-settings.md
+          - Bucket Insights: bucket-details.md
+          - Ceph RGW: ceph-provider.md
+          - Garage S3: garage-provider.md
   - Telemetry: telemetry.md
   - MCP Server: mcp-server.md
-  - Architecture & Design:
-      - System Overview: architecture.md
-      - Provider Model: provider-model.md
-      - Multi-Provider: multi-provider.md
-      - Decisions (Provider Abstraction): decisions/0001-provider-abstraction.md
-  - Features & Settings:
-      - S3 Connection Settings: provider-settings.md
-      - Bucket Insights: bucket-details.md
-      - Ceph RGW: ceph-provider.md
-      - Garage S3: garage-provider.md
   - Developer Guide:
-      - Guide: development.md
+      - Workflow & Setup: development.md
+      - Architecture & Design:
+          - System Overview: architecture.md
+          - Provider Model: provider-model.md
+          - Multi-Provider: multi-provider.md
+          - Decisions (Provider Abstraction): decisions/0001-provider-abstraction.md
 
 markdown_extensions:
   - admonition
