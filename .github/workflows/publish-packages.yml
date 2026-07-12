@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: write
 
 jobs:
   validate-version:
@@ -112,6 +113,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Cancel Workflow on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.cancelWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
   build-and-push-chart:
     needs: validate-version
     runs-on: ubuntu-latest
@@ -150,5 +162,90 @@ jobs:
 
       - name: Package and Push Helm Chart
         run: |
+          CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
+          echo "Discovered Chart Name: ${CHART_NAME}"
+          
+          # Package the chart
           helm package chart/ --version "${{ steps.version.outputs.value }}" --destination .
-          helm push "chart-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}"
+          
+          # Push the generated package
+          helm push "${CHART_NAME}-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}"
+
+      - name: Cancel Workflow on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.cancelWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId
+            });
+
+  cleanup-on-failure:
+    needs: [validate-version, build-and-push-images, build-and-push-chart]
+    if: always() && (contains(needs.build-and-push-images.result, 'failure') || contains(needs.build-and-push-chart.result, 'failure') || contains(needs.build-and-push-images.result, 'cancelled') || contains(needs.build-and-push-chart.result, 'cancelled'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lowercase repository owner
+        id: owner
+        run: |
+          echo "name=${OWNER,,}" >> $GITHUB_OUTPUT
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Calculate version tags
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            BASE_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+            VERSION="${BASE_VERSION}-dev.${{ github.run_number }}"
+          fi
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Clean up published packages from GHCR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          OWNER="${{ steps.owner.outputs.name }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          
+          cleanup_package() {
+            local package=$1
+            local tag=$2
+            local owner=$3
+            echo "Checking package: ${package}:${tag}..."
+            
+            local versions_json
+            versions_json=$(gh api "/orgs/${owner}/packages/container/${package}/versions" 2>/dev/null || gh api "/users/${owner}/packages/container/${package}/versions" 2>/dev/null || echo "[]")
+            
+            if [[ "${versions_json}" == "[]" ]]; then
+              echo "No versions found for ${package}."
+              return 0
+            fi
+            
+            local version_id
+            version_id=$(echo "${versions_json}" | jq -r --arg tag "${tag}" '.[] | select(.metadata.container.tags[]? == $tag) | .id')
+            
+            if [[ -n "${version_id}" && "${version_id}" != "null" ]]; then
+              echo "Found version ID ${version_id} for tag ${tag}. Deleting..."
+              gh api --method DELETE "/orgs/${owner}/packages/container/${package}/versions/${version_id}" 2>/dev/null || \
+              gh api --method DELETE "/users/${owner}/packages/container/${package}/versions/${version_id}" 2>/dev/null || \
+              echo "Failed to delete package version."
+              echo "Successfully deleted ${package}:${tag}."
+            else
+              echo "No matching version found for tag ${tag}."
+            fi
+          }
+          
+          CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
+          echo "Cleaning up possible failed release artifacts..."
+          
+          cleanup_package "service" "${TAG}" "${OWNER}"
+          cleanup_package "web-ui" "${TAG}" "${OWNER}"
+          cleanup_package "${CHART_NAME}" "${TAG}" "${OWNER}"
