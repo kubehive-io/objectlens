@@ -8,13 +8,44 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'chart/**'
+      - 'docs/**'
+      - 'mkdocs.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  # Job to detect which directories have changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      chart: ${{ steps.filter.outputs.chart }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect file changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            chart:
+              - 'chart/**'
+            docs:
+              - 'docs/**'
+              - 'mkdocs.yml'
+
   validate-chart-version:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.chart == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,6 +69,7 @@ jobs:
           echo "Main Chart Version: ${MAIN_VERSION}"
           echo "Main App Version:   ${MAIN_APP_VERSION}"
           
+          # We only fail if chart/Chart.yaml version is identical to main
           if [[ "${PR_VERSION}" == "${MAIN_VERSION}" ]]; then
             echo "ERROR: Helm chart version (${PR_VERSION}) has not been bumped and is identical to main!"
             exit 1
@@ -49,7 +81,31 @@ jobs:
           
           echo "SUCCESS: Chart version validation passed!"
 
+  validate-docs:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.docs == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install mkdocs-material
+
+      - name: Run Strict Docs Build
+        run: |
+          mkdocs build --strict
+
   test:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
