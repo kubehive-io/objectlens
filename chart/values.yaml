@@ -9,7 +9,8 @@ backend:
   replicaCount: 1
   image:
     repository: ghcr.io/kubehive-io/service
-    tag: "0.0.1"
+    tag: ""
+    sha: ""
     pullPolicy: Always
   service:
     port: 8000
@@ -33,7 +34,8 @@ frontend:
   replicaCount: 1
   image:
     repository: ghcr.io/kubehive-io/web-ui
-    tag: "0.0.1"
+    tag: ""
+    sha: ""
     pullPolicy: Always
   service:
     port: 80

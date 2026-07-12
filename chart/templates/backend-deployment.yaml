@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.backend.image.repository }}{{ if .Values.backend.image.sha }}@{{ .Values.backend.image.sha }}{{ else }}:{{ .Values.backend.image.tag | default .Chart.AppVersion }}{{ end }}"
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: 8000
