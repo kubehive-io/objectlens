@@ -67,7 +67,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.name }}/service
+          images: ghcr.io/${{ steps.owner.outputs.name }}/objectlens/service
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -92,7 +92,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.name }}/web-ui
+          images: ghcr.io/${{ steps.owner.outputs.name }}/objectlens/web-ui
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -221,8 +221,8 @@ jobs:
           echo "📦 Registry:  ghcr.io/${OWNER}"
           echo "🏷️ Version:   ${TAG}"
           echo "🚀 Artifacts published:"
-          echo "   - Container Service:  ghcr.io/${OWNER}/service:${TAG}"
-          echo "   - Container Web UI:   ghcr.io/${OWNER}/web-ui:${TAG}"
+          echo "   - Container Service:  ghcr.io/${OWNER}/objectlens/service:${TAG}"
+          echo "   - Container Web UI:   ghcr.io/${OWNER}/objectlens/web-ui:${TAG}"
           echo "   - Helm Chart OCI:     oci://ghcr.io/${OWNER}/objectlens/${CHART_NAME}:${TAG}"
           echo "=================================================="
 
@@ -294,8 +294,10 @@ jobs:
           CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
           echo "Cleaning up possible failed release artifacts..."
           
+          cleanup_package "objectlens/service" "${TAG}" "${OWNER}"
+          cleanup_package "objectlens/web-ui" "${TAG}" "${OWNER}"
+          cleanup_package "objectlens/helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "service" "${TAG}" "${OWNER}"
           cleanup_package "web-ui" "${TAG}" "${OWNER}"
-          cleanup_package "objectlens/helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "${CHART_NAME}" "${TAG}" "${OWNER}"

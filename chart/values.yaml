@@ -8,7 +8,7 @@ fullnameOverride: ""
 backend:
   replicaCount: 1
   image:
-    repository: ghcr.io/kubehive-io/service
+    repository: ghcr.io/kubehive-io/objectlens/service
     tag: ""
     sha: ""
     pullPolicy: Always
@@ -33,7 +33,7 @@ backend:
 frontend:
   replicaCount: 1
   image:
-    repository: ghcr.io/kubehive-io/web-ui
+    repository: ghcr.io/kubehive-io/objectlens/web-ui
     tag: ""
     sha: ""
     pullPolicy: Always
