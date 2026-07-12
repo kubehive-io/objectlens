@@ -4,11 +4,9 @@
   <img src="images/objectlens-logo.png" alt="ObjectLens Banner" />
 </p>
 
-![Project State: MVP](https://img.shields.io/badge/project--state-MVP-blue)
-
 ObjectLens is a Kubernetes-native object storage interface for fast access to Ceph RGW and S3-compatible object data.
 
-ObjectLens is documented with MkDocs Material.
+---
 
 ## Features
 
@@ -45,77 +43,46 @@ ObjectLens is documented with MkDocs Material.
 ### Interface
 - **Dynamic Theming**: Easily switch between light, dark, and system-matched theme modes.
 
-## Quick Start
+---
+
+## Deployment via Helm (Recommended)
+
+Deploy ObjectLens into your Kubernetes cluster using the published Helm chart from GitHub Container Registry (GHCR):
 
 ```bash
-git clone <repo>
-cd objectlens
-
-devbox shell
-cp example/.env.example .env
-just install
-just dev
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens/helm-chart \
+  --version 0.1.0 \
+  --namespace objectlens \
+  --create-namespace
 ```
 
-Open:
+### Configuration Overrides
 
-```text
-Frontend: http://localhost:3000
-Backend Swagger: http://localhost:8000/docs
-```
-
-## Security & RBAC Configuration
-
-To activate role-based access control, adjust these settings in your `.env` file:
-
-```env
-# Enable authentication: "none" (no login, default) or "local" (YAML manifests)
-OBJECTLENS_AUTH_TYPE=local
-
-# Folder storing YAML user manifests (defaults to backend/data/users)
-OBJECTLENS_USERS_CONFIG_DIR=backend/data/users
-```
-
-On first startup with `OBJECTLENS_AUTH_TYPE=local`, ObjectLens automatically populates default account manifests in your config directory:
-- **Admin:** `admin` / `adminpassword` (Full read/write privileges)
-- **Viewer:** `viewer` / `viewerpassword` (Read-only browsing and downloading)
-
-## Documentation
-
-Run docs locally:
+You can customize your deployment (including your Ceph S3 endpoints, credentials, persistence, and ingress) by passing parameters during installation or updating `values.yaml`:
 
 ```bash
-devbox shell
-just docs
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens/helm-chart \
+  --version 0.1.0 \
+  --namespace objectlens \
+  --create-namespace \
+  --set backend.env.CEPH_S3_ENDPOINT_URL="https://your-ceph-rgw:9000" \
+  --set backend.env.CEPH_S3_ACCESS_KEY_ID="your-access-key" \
+  --set backend.env.CEPH_S3_SECRET_ACCESS_KEY="your-secret-key"
 ```
 
-Open:
+For more configuration settings, refer to [values.yaml](chart/values.yaml) and the **S3 Connection Settings** guide in our documentation.
 
-```text
-http://localhost:8080
-```
+---
 
-Build docs:
+## Quick Start (Local Docker Compose)
+
+To spin up the entire ObjectLens stack locally with a mock MinIO S3 storage backend:
 
 ```bash
-just docs-build
+docker compose -f example/standard/docker-compose.yaml up
 ```
 
-## Common Commands
-
-```bash
-just install
-just backend
-just frontend
-just dev
-just lint
-just format
-just test
-just clean
-```
-
-Docker support remains available without Devbox:
-
-```bash
-docker compose up --build
-```
+This starts:
+- **Frontend UI**: `http://localhost:3000`
+- **Backend API**: `http://localhost:8000`
+- **MinIO Console**: `http://localhost:9001` (login with `minioadmin` / `minioadmin`)

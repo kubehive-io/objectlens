@@ -77,3 +77,7 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - toc:
       permalink: true
+
+extra:
+  version:
+    provider: mike

@@ -6,6 +6,9 @@
 backend/data/providers/*
 !backend/data/providers/README.md
 
+# Docker Compose Local Bind Mount Data
+example/*/data/
+
 # Python
 __pycache__/
 *.py[cod]
