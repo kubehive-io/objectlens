@@ -8,9 +8,9 @@ fullnameOverride: ""
 backend:
   replicaCount: 1
   image:
-    repository: ghcr.io/kubehive-io/objectlens-backend
+    repository: ghcr.io/kubehive-io/service
     tag: "0.0.1"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 8000
   env:
@@ -32,9 +32,9 @@ backend:
 frontend:
   replicaCount: 1
   image:
-    repository: ghcr.io/kubehive-io/objectlens-frontend
+    repository: ghcr.io/kubehive-io/web-ui
     tag: "0.0.1"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   service:
     port: 80
   env:

@@ -40,7 +40,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.name }}/objectlens-backend
+          images: ghcr.io/${{ steps.owner.outputs.name }}/service
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -65,7 +65,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.name }}/objectlens-frontend
+          images: ghcr.io/${{ steps.owner.outputs.name }}/web-ui
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -124,4 +124,4 @@ jobs:
       - name: Package and Push Helm Chart
         run: |
           helm package chart/ --version "${{ steps.version.outputs.value }}" --destination .
-          helm push "objectlens-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}"
+          helm push "chart-${{ steps.version.outputs.value }}.tgz" "oci://ghcr.io/${{ steps.owner.outputs.name }}"
