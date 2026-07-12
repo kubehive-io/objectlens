@@ -8,7 +8,7 @@ fullnameOverride: ""
 backend:
   replicaCount: 1
   image:
-    repository: objectlens-backend
+    repository: ghcr.io/kubehive-io/objectlens-backend
     tag: "0.1.0"
     pullPolicy: IfNotPresent
   service:
@@ -32,7 +32,7 @@ backend:
 frontend:
   replicaCount: 1
   image:
-    repository: objectlens-frontend
+    repository: ghcr.io/kubehive-io/objectlens-frontend
     tag: "0.1.0"
     pullPolicy: IfNotPresent
   service:
