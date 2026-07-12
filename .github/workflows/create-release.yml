@@ -17,7 +17,7 @@ jobs:
 
       - name: Create Release if version is bumped
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           CHART_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
           TAG_NAME="v${CHART_VERSION}"
