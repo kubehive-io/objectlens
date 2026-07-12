@@ -37,30 +37,30 @@ clean:
     rm -rf backend/.venv frontend/node_modules frontend/.nuxt frontend/.output .pytest_cache .ruff_cache
 
 docker-up:
-    {{compose}} -f example/docker-compose.yaml up --build
+    {{compose}} -f example/development/docker-compose.yaml up --build
 
 docker-down:
-    {{compose}} -f example/docker-compose.yaml down
+    {{compose}} -f example/development/docker-compose.yaml down
 
 docker-garage-up:
-    {{compose}} -f example/docker-compose-garage.yaml up --build
+    {{compose}} -f example/garage/docker-compose.yaml up --build
 
 init-garage:
     #!/bin/sh
-    NODE_ID=$({{compose}} -f example/docker-compose-garage.yaml exec garage /garage status 2>&1 | grep -oE "[0-9a-f]{16}" | head -n 1 | tr -d '\r' | tr -d '\n'); \
+    NODE_ID=$({{compose}} -f example/garage/docker-compose.yaml exec garage /garage status 2>&1 | grep -oE "[0-9a-f]{16}" | head -n 1 | tr -d '\r' | tr -d '\n'); \
     echo "Discovered Garage Node ID: $NODE_ID"; \
     if [ -n "$NODE_ID" ]; then \
         echo "Assigning node $NODE_ID to local zone..."; \
-        {{compose}} -f example/docker-compose-garage.yaml exec garage /garage layout assign $NODE_ID -z local -c 10G || true; \
+        {{compose}} -f example/garage/docker-compose.yaml exec garage /garage layout assign $NODE_ID -z local -c 10G || true; \
         echo "Applying layout change..."; \
-        {{compose}} -f example/docker-compose-garage.yaml exec garage /garage layout apply --version 1 || true; \
+        {{compose}} -f example/garage/docker-compose.yaml exec garage /garage layout apply --version 1 || true; \
     fi
     echo "Importing custom S3 credentials..."
-    {{compose}} -f example/docker-compose-garage.yaml exec garage /garage key import my-custom-user my-custom-secret-key --yes || true
+    {{compose}} -f example/garage/docker-compose.yaml exec garage /garage key import my-custom-user my-custom-secret-key --yes || true
     echo "Creating default S3 bucket..."
-    {{compose}} -f example/docker-compose-garage.yaml exec garage /garage bucket create objectlens-demo || true
+    {{compose}} -f example/garage/docker-compose.yaml exec garage /garage bucket create objectlens-demo || true
     echo "Authorizing imported S3 key..."
-    {{compose}} -f example/docker-compose-garage.yaml exec garage /garage bucket allow objectlens-demo --read --write --key my-custom-user || true
+    {{compose}} -f example/garage/docker-compose.yaml exec garage /garage bucket allow objectlens-demo --read --write --key my-custom-user || true
     echo "S3 Garage initialization completed successfully!"
 
 k8s-apply:

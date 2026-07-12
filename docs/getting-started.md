@@ -10,12 +10,12 @@ Run the entire stack locally with MinIO acting as a mock S3 storage backend:
 
 ```bash
 # Using Docker Compose
-docker compose -f example/docker-compose.yaml up --build
+docker compose -f example/standard/docker-compose.yaml up
 
 # Using Podman Compose
-podman compose -f example/docker-compose.yaml up --build
+podman compose -f example/standard/docker-compose.yaml up
 
-# Or if you have 'just' installed (automatically detects podman/docker):
+# Or to run the local development build from source using 'just':
 just docker-up
 ```
 
@@ -27,7 +27,7 @@ This starts:
 To stop all services:
 
 ```bash
-docker compose -f example/docker-compose.yaml down
+docker compose -f example/standard/docker-compose.yaml down
 # or: just docker-down
 ```
 

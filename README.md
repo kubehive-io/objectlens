@@ -79,7 +79,7 @@ For more configuration settings, refer to [values.yaml](chart/values.yaml) and t
 To spin up the entire ObjectLens stack locally with a mock MinIO S3 storage backend:
 
 ```bash
-docker compose -f example/docker-compose.yaml up --build
+docker compose -f example/standard/docker-compose.yaml up
 ```
 
 This starts:

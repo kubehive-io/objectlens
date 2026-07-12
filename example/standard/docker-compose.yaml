@@ -1,7 +1,7 @@
 services:
   backend:
-    build:
-      context: ../backend
+    image: ghcr.io/kubehive-io/objectlens/service:latest
+    pull_policy: always
     environment:
       OBJECTLENS_PROVIDER: ceph
       CEPH_S3_ENDPOINT_URL: http://minio:9000
@@ -13,15 +13,15 @@ services:
       OBJECTLENS_DATABASE_URL: sqlite:////data/objectlens.db
       OBJECTLENS_CORS_ORIGINS: http://localhost:3000
     volumes:
-      - objectlens-data:/data
+      - ./data:/data
     ports:
       - "8000:8000"
     depends_on:
       - minio
 
   frontend:
-    build:
-      context: ../frontend
+    image: ghcr.io/kubehive-io/objectlens/web-ui:latest
+    pull_policy: always
     environment:
       NUXT_PUBLIC_API_BASE_URL: http://localhost:8000
     ports:
@@ -60,7 +60,7 @@ services:
       - garage
     command: /garage server
     volumes:
-      - ./garage/garage.toml:/etc/garage.toml:ro
+      - ../garage/garage.toml:/etc/garage.toml:ro
       - garage-data:/var/lib/garage
     ports:
       - "3900:3900"
@@ -68,6 +68,5 @@ services:
       - "3902:3902"
 
 volumes:
-  objectlens-data:
   minio-data:
   garage-data:
