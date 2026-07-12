@@ -36,13 +36,13 @@ docker compose -f example/docker-compose.yaml down
 Deploy ObjectLens using the published Helm chart from GitHub Container Registry (GHCR):
 
 ```bash
-helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens --namespace objectlens --create-namespace
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens/helm-chart --namespace objectlens --create-namespace
 ```
 
 This deploys the backend and frontend to the `objectlens` namespace. Customize S3 connections by passing variables during installation:
 
 ```bash
-helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens \
+helm upgrade --install objectlens oci://ghcr.io/kubehive-io/objectlens/helm-chart \
   --namespace objectlens \
   --create-namespace \
   --set backend.env.CEPH_S3_ENDPOINT_URL="http://your-s3-endpoint:9000" \
