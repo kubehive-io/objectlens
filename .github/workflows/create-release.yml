@@ -1,0 +1,36 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create Release if version is bumped
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CHART_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          TAG_NAME="v${CHART_VERSION}"
+          echo "Current chart version: ${CHART_VERSION}"
+          echo "Target release tag:    ${TAG_NAME}"
+          
+          # Check if the release/tag already exists on GitHub
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            echo "Release ${TAG_NAME} already exists. Skipping release creation."
+          else
+            echo "Creating new release ${TAG_NAME}..."
+            gh release create "${TAG_NAME}" \
+              --title "Release ${TAG_NAME}" \
+              --generate-notes
+            echo "Successfully created release ${TAG_NAME}!"
+          fi
