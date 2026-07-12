@@ -33,6 +33,17 @@ docs:
 docs-build:
     mkdocs build --strict
 
+docs-multi:
+    @echo "=================================================="
+    @echo "🎉 Multi-version docs are ready for testing!"
+    @echo "🚀 Opening local server..."
+    @echo "👉 Preview at: http://localhost:8000"
+    @echo "=================================================="
+    uv run --with mkdocs-material --with mike mike deploy --branch github-doc dev
+    uv run --with mkdocs-material --with mike mike deploy --branch github-doc 0.1.0 latest
+    uv run --with mkdocs-material --with mike mike set-default --branch github-doc latest
+    uv run --with mkdocs-material --with mike mike serve --branch github-doc
+
 clean:
     rm -rf backend/.venv frontend/node_modules frontend/.nuxt frontend/.output .pytest_cache .ruff_cache
 
