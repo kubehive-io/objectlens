@@ -113,6 +113,31 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract metadata for mcp-server
+        id: meta-mcp
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.owner.outputs.name }}/objectlens/mcp-server
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ github.event_name == 'release' }}
+            type=sha,format=short
+
+      - name: Build and push MCP Server image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./mcp-server
+          file: ./mcp-server/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-mcp.outputs.tags }}
+          labels: ${{ steps.meta-mcp.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Cancel Workflow on Failure
         if: failure()
         uses: actions/github-script@v7
@@ -221,9 +246,10 @@ jobs:
           echo "📦 Registry:  ghcr.io/${OWNER}"
           echo "🏷️ Version:   ${TAG}"
           echo "🚀 Artifacts published:"
-          echo "   - Container Service:  ghcr.io/${OWNER}/objectlens/service:${TAG}"
-          echo "   - Container Web UI:   ghcr.io/${OWNER}/objectlens/web-ui:${TAG}"
-          echo "   - Helm Chart OCI:     oci://ghcr.io/${OWNER}/objectlens/${CHART_NAME}:${TAG}"
+          echo "   - Container Service:     ghcr.io/${OWNER}/objectlens/service:${TAG}"
+          echo "   - Container Web UI:      ghcr.io/${OWNER}/objectlens/web-ui:${TAG}"
+          echo "   - Container MCP Server:  ghcr.io/${OWNER}/objectlens/mcp-server:${TAG}"
+          echo "   - Helm Chart OCI:        oci://ghcr.io/${OWNER}/objectlens/${CHART_NAME}:${TAG}"
           echo "=================================================="
 
   cleanup-on-failure:
@@ -296,8 +322,10 @@ jobs:
           
           cleanup_package "objectlens/service" "${TAG}" "${OWNER}"
           cleanup_package "objectlens/web-ui" "${TAG}" "${OWNER}"
+          cleanup_package "objectlens/mcp-server" "${TAG}" "${OWNER}"
           cleanup_package "objectlens/helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "service" "${TAG}" "${OWNER}"
           cleanup_package "web-ui" "${TAG}" "${OWNER}"
+          cleanup_package "mcp-server" "${TAG}" "${OWNER}"
           cleanup_package "helm-chart" "${TAG}" "${OWNER}"
           cleanup_package "${CHART_NAME}" "${TAG}" "${OWNER}"
