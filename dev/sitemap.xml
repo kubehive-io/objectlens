@@ -29,6 +29,10 @@
          <lastmod>2026-07-12</lastmod>
     </url>
     <url>
+         <loc>https://example.com/objectlens/dev/mcp-server/</loc>
+         <lastmod>2026-07-12</lastmod>
+    </url>
+    <url>
          <loc>https://example.com/objectlens/dev/multi-provider/</loc>
          <lastmod>2026-07-12</lastmod>
     </url>
@@ -38,6 +42,10 @@
     </url>
     <url>
          <loc>https://example.com/objectlens/dev/provider-settings/</loc>
+         <lastmod>2026-07-12</lastmod>
+    </url>
+    <url>
+         <loc>https://example.com/objectlens/dev/telemetry/</loc>
          <lastmod>2026-07-12</lastmod>
     </url>
     <url>

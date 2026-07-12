@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://example.com/objectlens/dev/ceph-provider/">
+        <link rel="canonical" href="https://example.com/objectlens/dev/telemetry/">
       
       
-        <link rel="prev" href="../bucket-details/">
+        <link rel="prev" href="../garage-provider/">
       
       
-        <link rel="next" href="../garage-provider/">
+        <link rel="next" href="../mcp-server/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Ceph RGW - ObjectLens</title>
+        <title>Telemetry - ObjectLens</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ceph-provider" class="md-skip">
+        <a href="#telemetry" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ceph RGW
+              Telemetry
             
           </span>
         </div>
@@ -272,12 +272,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../user-guide/" class="md-tabs__link">
           
   
@@ -294,9 +292,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../telemetry/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -519,31 +519,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -561,7 +558,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -604,31 +601,28 @@
                 
   
   
-    
   
   
-  
     
     
     
     
       
       
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
         
           
-          
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" checked>
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
         
           
-          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
             
   
   
@@ -646,7 +640,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -717,37 +711,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ceph RGW
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ceph-provider/" class="md-nav__link">
         
   
   
@@ -763,70 +730,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#homelab-ceph-rgw" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Homelab Ceph RGW
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Notes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#preview-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Preview Limitations
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -879,10 +782,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../telemetry/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Telemetry
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -898,6 +828,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#planned-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Planned Scope
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1219,43 +1180,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#environment-variables" class="md-nav__link">
+  <a href="#planned-scope" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment Variables
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#homelab-ceph-rgw" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Homelab Ceph RGW
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Security Notes
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#preview-limitations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Preview Limitations
+        Planned Scope
       
     </span>
   </a>
@@ -1282,43 +1210,12 @@
   
 
 
-<h1 id="ceph-provider">Ceph Provider<a class="headerlink" href="#ceph-provider" title="Permanent link">&para;</a></h1>
-<p>Ceph RGW is the first supported ObjectLens provider.</p>
-<p>The provider uses the S3-compatible API through boto3. This keeps the implementation practical because Ceph Object Gateway already exposes common S3 operations such as bucket listing, object listing, metadata reads, and presigned downloads.</p>
-<p>Bucket visibility comes from Ceph RGW credentials. <code>GET /buckets</code> calls the provider API and returns only buckets the configured access key can list. If Ceph RGW denies bucket listing, ObjectLens returns a clear API error instead of falling back to static bucket names.</p>
-<h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>OBJECTLENS_PROVIDER=ceph
-
-CEPH_S3_ENDPOINT_URL=http://localhost:9000
-CEPH_S3_REGION=us-east-1
-CEPH_S3_ACCESS_KEY_ID=minioadmin
-CEPH_S3_SECRET_ACCESS_KEY=minioadmin
-CEPH_S3_DEFAULT_BUCKET=
-CEPH_S3_VERIFY_SSL=false
-</code></pre></div>
-<h2 id="homelab-ceph-rgw">Homelab Ceph RGW<a class="headerlink" href="#homelab-ceph-rgw" title="Permanent link">&para;</a></h2>
-<p>For a homelab Ceph cluster, point <code>CEPH_S3_ENDPOINT_URL</code> at the RGW endpoint:</p>
-<div class="highlight"><pre><span></span><code>CEPH_S3_ENDPOINT_URL=https://rgw.example.internal
-CEPH_S3_REGION=us-east-1
-CEPH_S3_ACCESS_KEY_ID=&lt;access-key&gt;
-CEPH_S3_SECRET_ACCESS_KEY=&lt;secret-key&gt;
-CEPH_S3_DEFAULT_BUCKET=&lt;optional-default-bucket&gt;
-CEPH_S3_VERIFY_SSL=true
-</code></pre></div>
-<p>If the endpoint uses a private certificate authority, configure the host trust store or set up a verified certificate chain rather than disabling SSL verification for shared environments.</p>
-<h2 id="security-notes">Security Notes<a class="headerlink" href="#security-notes" title="Permanent link">&para;</a></h2>
+<h1 id="telemetry">Telemetry<a class="headerlink" href="#telemetry" title="Permanent link">&para;</a></h1>
+<p>This section is a placeholder for the upcoming ObjectLens telemetry integration and observability guide.</p>
+<h2 id="planned-scope">Planned Scope<a class="headerlink" href="#planned-scope" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Do not commit real Ceph credentials.</li>
-<li>Use Kubernetes Secrets for deployment.</li>
-<li>Prefer scoped credentials with the minimum bucket access needed.</li>
-<li>Rotate credentials if they are exposed in shell history, logs, or local files.</li>
-</ul>
-<h2 id="preview-limitations">Preview Limitations<a class="headerlink" href="#preview-limitations" title="Permanent link">&para;</a></h2>
-<ul>
-<li>JSON and CSV previews read only a bounded byte range.</li>
-<li>Image previews return a presigned URL instead of proxying large bytes through the API.</li>
-<li>Parquet preview is optional and requires <code>pyarrow</code>; without it, ObjectLens returns an unsupported preview response with a download URL.</li>
-<li>Preview and download activity should be audited in a later phase.</li>
+<li><strong>OpenTelemetry (OTel) Integration</strong>: Exposing native backend trace spans and prometheus metrics.</li>
+<li><strong>Performance Benchmarks</strong>: Visualizing Ceph RGW request latency and bucket scanning metrics.</li>
 </ul>
 
 
