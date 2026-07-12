@@ -10,7 +10,33 @@ permissions:
   packages: write
 
 jobs:
+  validate-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate versions
+        run: |
+          CHART_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+          echo "Chart version: ${CHART_VERSION}"
+          
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            RELEASE_VERSION="${{ github.event.release.tag_name }}"
+            RELEASE_VERSION="${RELEASE_VERSION#v}"
+            echo "Release version: ${RELEASE_VERSION}"
+            
+            if [[ "${CHART_VERSION}" != "${RELEASE_VERSION}" ]]; then
+              echo "ERROR: Helm chart version (${CHART_VERSION}) does not match the GitHub Release tag version (${RELEASE_VERSION})!"
+              exit 1
+            fi
+            echo "SUCCESS: Helm chart version matches release version!"
+          else
+            echo "Skipping validation: not triggered by a release event"
+          fi
+
   build-and-push-images:
+    needs: validate-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -87,6 +113,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   build-and-push-chart:
+    needs: validate-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
