@@ -182,6 +182,47 @@ jobs:
               run_id: context.runId
             });
 
+  publish-success:
+    needs: [validate-version, build-and-push-images, build-and-push-chart]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lowercase repository owner
+        id: owner
+        run: |
+          echo "name=${OWNER,,}" >> $GITHUB_OUTPUT
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Calculate version tags
+        id: version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            BASE_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+            VERSION="${BASE_VERSION}-dev.${{ github.run_number }}"
+          fi
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Announce success
+        run: |
+          OWNER="${{ steps.owner.outputs.name }}"
+          TAG="${{ steps.version.outputs.tag }}"
+          CHART_NAME=$(grep '^name:' chart/Chart.yaml | awk '{print $2}')
+          
+          echo "=================================================="
+          echo "🎉 SUCCESS: All packages published successfully!"
+          echo "📦 Registry:  ghcr.io/${OWNER}"
+          echo "🏷️ Version:   ${TAG}"
+          echo "🚀 Artifacts published:"
+          echo "   - Container Service:  ghcr.io/${OWNER}/service:${TAG}"
+          echo "   - Container Web UI:   ghcr.io/${OWNER}/web-ui:${TAG}"
+          echo "   - Helm Chart OCI:     oci://ghcr.io/${OWNER}/${CHART_NAME}:${TAG}"
+          echo "=================================================="
+
   cleanup-on-failure:
     needs: [validate-version, build-and-push-images, build-and-push-chart]
     if: always() && (contains(needs.build-and-push-images.result, 'failure') || contains(needs.build-and-push-chart.result, 'failure') || contains(needs.build-and-push-images.result, 'cancelled') || contains(needs.build-and-push-chart.result, 'cancelled'))
